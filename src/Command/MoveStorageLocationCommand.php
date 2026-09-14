@@ -1,8 +1,8 @@
 <?php
+
 namespace S3Storage\Command;
 
 use Concrete\Core\File\Command\FileCommand;
-use S3Storage\Command\MoveStorageLocationCommandHandler;
 
 class MoveStorageLocationCommand extends FileCommand
 {

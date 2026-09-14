@@ -1,15 +1,15 @@
 <?php
+
 namespace Concrete\Package\S3Storage\File\StorageLocation\Configuration;
 
-use Aws\Credentials\Credentials;
 use Aws\S3\S3Client;
+use Concrete\Core\Http\Request;
+use Aws\Credentials\Credentials;
+use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
+use Concrete\Core\Support\Facade\Application;
 use Concrete\Core\File\StorageLocation\Configuration\Configuration;
 use Concrete\Core\File\StorageLocation\Configuration\ConfigurationInterface;
 use Concrete\Core\File\StorageLocation\Configuration\DeferredConfigurationInterface;
-use Concrete\Core\File\StorageLocation\StorageLocationFactory;
-use Concrete\Core\Http\Request;
-use Concrete\Core\Support\Facade\Application;
-use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 
 class TypeS3Configuration extends Configuration implements ConfigurationInterface, DeferredConfigurationInterface
 {
@@ -19,6 +19,16 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
     protected string $storageSecret;
     protected string $region;
     protected string $apiVersion;
+
+    protected function getClient(): S3Client
+    {
+        $client = new S3Client([
+            'region' => $this->getRegion(),
+            'version' => $this->getApiVersion(),
+            'credentials' => new Credentials($this->getStorageKey(), $this->getStorageSecret()),
+        ]);
+        return $client;
+    }
 
     /**
      * Get the value of storageBucket
@@ -31,7 +41,7 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
     /**
      * Set the value of storageBucket
      *
-     * @return  self
+     * @return self
      */
     public function setStorageBucket(string $storageBucket): self
     {
@@ -51,7 +61,7 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
     /**
      * Set the value of cloudfrontUrl
      *
-     * @return  self
+     * @return self
      */
     public function setCloudfrontUrl(string $cloudfrontUrl): self
     {
@@ -71,7 +81,7 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
     /**
      * Set the value of storageKey
      *
-     * @return  self
+     * @return self
      */
     public function setStorageKey(string $storageKey): self
     {
@@ -91,7 +101,7 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
     /**
      * Set the value of storageSecret
      *
-     * @return  self
+     * @return self
      */
     public function setStorageSecret(string $storageSecret): self
     {
@@ -111,7 +121,7 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
     /**
      * Set the value of region
      *
-     * @return  self
+     * @return self
      */
     public function setRegion(string $region): self
     {
@@ -131,7 +141,7 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
     /**
      * Set the value of apiVersion
      *
-     * @return  self
+     * @return self
      */
     public function setApiVersion(string $apiVersion): self
     {
@@ -214,16 +224,6 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
     public function getAdapter(): AwsS3V3Adapter
     {
         return new AwsS3V3Adapter($this->getClient(), $this->getStorageBucket());
-    }
-
-    protected function getClient(): S3Client
-    {
-        $client = new S3Client([
-            'region'        => $this->getRegion(),
-            'version'       => $this->getApiVersion(),
-            'credentials'   => new Credentials($this->getStorageKey(), $this->getStorageSecret())
-        ]);
-        return $client;
     }
 
     public function getPublicURLToFile($file): string

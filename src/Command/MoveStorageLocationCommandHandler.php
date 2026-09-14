@@ -1,4 +1,5 @@
 <?php
+
 namespace S3Storage\Command;
 
 use Core;

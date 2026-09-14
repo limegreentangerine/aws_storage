@@ -5,7 +5,7 @@ namespace Concrete\Package\S3Storage\File\StorageLocation\Configuration;
 use Aws\S3\S3Client;
 use Concrete\Core\Http\Request;
 use Aws\Credentials\Credentials;
-use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
+use League\Flysystem\AwsS3v3\AwsS3Adapter;
 use Concrete\Core\Support\Facade\Application;
 use Concrete\Core\File\StorageLocation\Configuration\Configuration;
 use Concrete\Core\File\StorageLocation\Configuration\ConfigurationInterface;
@@ -13,12 +13,12 @@ use Concrete\Core\File\StorageLocation\Configuration\DeferredConfigurationInterf
 
 class TypeS3Configuration extends Configuration implements ConfigurationInterface, DeferredConfigurationInterface
 {
-    protected string $storageBucket;
-    protected string $cloudfrontUrl;
-    protected string $storageKey;
-    protected string $storageSecret;
-    protected string $region;
-    protected string $apiVersion;
+    protected string $storageBucket = '';
+    protected string $cloudfrontUrl = '';
+    protected string $storageKey = '';
+    protected string $storageSecret = '';
+    protected string $region = 'eu-west-2';
+    protected string $apiVersion = '2006-03-01';
 
     protected function getClient(): S3Client
     {
@@ -221,16 +221,18 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
         return $e;
     }
 
-    public function getAdapter(): AwsS3V3Adapter
+    public function getAdapter(): AwsS3Adapter
     {
-        return new AwsS3V3Adapter($this->getClient(), $this->getStorageBucket());
+        return new AwsS3Adapter($this->getClient(), $this->getStorageBucket());
     }
 
     public function getPublicURLToFile($file): string
     {
+        $normalizedFile = ltrim((string) $file, '/');
+
         return ($this->getCloudfrontUrl() !== '' && $this->getCloudfrontUrl() !== null)
-            ? $this->getCloudfrontUrl() . $file
-            : $this->getClient()->getObjectUrl($this->getStorageBucket(), ltrim($file, '/'));
+            ? rtrim($this->getCloudfrontUrl(), '/') . '/' . $normalizedFile
+            : $this->getClient()->getObjectUrl($this->getStorageBucket(), $normalizedFile);
     }
 
     public function getRelativePathToFile($file): string

@@ -2,12 +2,11 @@
 
 namespace AwsStorage\Command;
 
-use AwsStorage\Command\MoveStorageLocationCommand;
+use Core;
+use Doctrine\ORM\EntityManagerInterface;
 use Concrete\Core\Entity\File\File as FileEntity;
 use Concrete\Core\Entity\File\StorageLocation\StorageLocation;
 use Concrete\Core\File\StorageLocation\StorageLocationFactory;
-use Core;
-use Doctrine\ORM\EntityManagerInterface;
 
 class MoveStorageLocationCommandHandler
 {

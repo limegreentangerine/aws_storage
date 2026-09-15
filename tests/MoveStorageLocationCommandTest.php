@@ -2,9 +2,9 @@
 
 namespace Tests;
 
+use PHPUnit\Framework\TestCase;
 use Concrete\Core\File\Command\FileCommand;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\TestCase;
 use AwsStorage\Command\MoveStorageLocationCommand;
 use AwsStorage\Command\MoveStorageLocationCommandHandler;
 

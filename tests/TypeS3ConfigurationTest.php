@@ -2,9 +2,9 @@
 
 namespace Tests;
 
-use Concrete\Package\AwsStorage\File\StorageLocation\Configuration\TypeS3Configuration;
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use Concrete\Package\AwsStorage\File\StorageLocation\Configuration\TypeS3Configuration;
 
 #[CoversClass(TypeS3Configuration::class)]
 class TypeS3ConfigurationTest extends TestCase
@@ -48,7 +48,7 @@ class TypeS3ConfigurationTest extends TestCase
 
         $this->assertSame(
             'https://cdn.example.com/path/to/file.jpg',
-            $configuration->getPublicURLToFile('/path/to/file.jpg')
+            $configuration->getPublicURLToFile('/path/to/file.jpg'),
         );
     }
 

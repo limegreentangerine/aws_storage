@@ -104,7 +104,7 @@ class Controller extends Package
      *
      * @var array
      */
-    protected static $regions = [
+    protected $regions = [
         '' => 'Choose one...',
         'us-east-1' => 'US East (N. Virginia)',
         'us-east-2' => 'US East (Ohio)',

@@ -1,6 +1,6 @@
 <?php defined('C5_EXECUTE') or die('Access Denied');
     $form = \Core::make('helper/form');
-    $pkg = \Core::make('Concrete\Core\Package\PackageService')->getByHandle('lgt_toolkit');
+    $pkg = \Core::make('Concrete\Core\Package\PackageService')->getByHandle('aws_storage');
     $regions = $pkg->getRegions();
 ?>
 

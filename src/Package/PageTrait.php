@@ -1,6 +1,6 @@
 <?php
 
-namespace S3Storage\Package;
+namespace AwsStorage\Package;
 
 use Page;
 use PageType;

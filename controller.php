@@ -1,11 +1,11 @@
 <?php
 
-namespace Concrete\Package\S3Storage;
+namespace Concrete\Package\AwsStorage;
 
 use Core;
-use S3Storage\Package\PageTrait;
+use AwsStorage\Package\PageTrait;
 use Concrete\Core\Package\Package;
-use S3Storage\Package\StorageTypeTrait;
+use AwsStorage\Package\StorageTypeTrait;
 
 class Controller extends Package
 {
@@ -19,14 +19,14 @@ class Controller extends Package
      *
      * @var string
      */
-    protected $pkgHandle = 's3_storage';
+    protected $pkgHandle = 'aws_storage';
 
     /**
      * The packages version.
      *
      * @var string
      */
-    protected $pkgVersion = '1.0.0-rc.1';
+    protected $pkgVersion = '1.0.0';
 
     /**
      * The minimum Concrete version compatible with the package.
@@ -87,7 +87,7 @@ class Controller extends Package
      * @var array
      */
     protected $pkgAutoloaderRegistries = [
-        'src' => '\S3Storage',
+        'src' => '\AwsStorage',
     ];
 
     /**
@@ -144,18 +144,18 @@ class Controller extends Package
 
     protected function installOrUpgrade(\Concrete\Core\Entity\Package $pkg): void
     {
-        $this->addStorageType('type_s3', $pkg, 'S3 Storage');
-        $this->addSinglePage('/dashboard/s3_storage', $pkg, t('S3 Storage'));
+        $this->addStorageType('type_s3', $pkg, t('S3 Storage'));
+        $this->addSinglePage('/dashboard/aws_storage', $pkg, t('AWS Storage'));
     }
 
     public function getPackageName()
     {
-        return t('S3 Storage');
+        return t('AWS Storage');
     }
 
     public function getPackageDescription()
     {
-        return t('Adds S3 Storage options to ConcreteCMS');
+        return t('Adds AWS (S3) Storage options to ConcreteCMS');
     }
 
     /**

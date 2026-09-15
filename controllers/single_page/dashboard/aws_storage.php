@@ -1,5 +1,5 @@
 <?php
-namespace Concrete\Package\S3Storage\Controller\SinglePage\Dashboard;
+namespace Concrete\Package\AwsStorage\Controller\SinglePage\Dashboard;
 
 use FileList;
 use Exception;
@@ -8,9 +8,9 @@ use Concrete\Core\Entity\File\File as FileEntity;
 use Concrete\Core\Entity\File\StorageLocation\StorageLocation;
 use Concrete\Core\Page\Controller\DashboardPageController;
 use Concrete\Core\File\StorageLocation\StorageLocationFactory;
-use S3Storage\Command\MoveStorageLocationCommand;
+use AwsStorage\Command\MoveStorageLocationCommand;
 
-class S3Storage extends DashboardPageController
+class AwsStorage extends DashboardPageController
 {
     protected $helpers = [
         'form',
@@ -80,7 +80,7 @@ class S3Storage extends DashboardPageController
                 }
             }
         } else {
-            $this->buildRedirect('/dashboard/s3_storage')->send();
+            $this->buildRedirect('/dashboard/aws_storage')->send();
         }
     }
 

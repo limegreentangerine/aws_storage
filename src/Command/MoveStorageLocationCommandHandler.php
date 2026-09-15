@@ -1,12 +1,13 @@
 <?php
 
-namespace S3Storage\Command;
+namespace AwsStorage\Command;
 
-use Core;
-use Doctrine\ORM\EntityManagerInterface;
+use AwsStorage\Command\MoveStorageLocationCommand;
 use Concrete\Core\Entity\File\File as FileEntity;
 use Concrete\Core\Entity\File\StorageLocation\StorageLocation;
 use Concrete\Core\File\StorageLocation\StorageLocationFactory;
+use Core;
+use Doctrine\ORM\EntityManagerInterface;
 
 class MoveStorageLocationCommandHandler
 {

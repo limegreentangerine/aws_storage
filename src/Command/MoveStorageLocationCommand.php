@@ -1,6 +1,6 @@
 <?php
 
-namespace S3Storage\Command;
+namespace AwsStorage\Command;
 
 use Concrete\Core\File\Command\FileCommand;
 

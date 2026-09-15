@@ -43,7 +43,7 @@ jobs:
             await github.rest.repos.createDispatchEvent({
               owner: 'limegreentangerine',
               repo: 'packages.limegreentangerine.net',
-              event_type: 's3-storage-tests-passed',
+              event_type: 'package-tests-passed',
               client_payload: {
                 source_repository: context.repo.owner + '/' + context.repo.repo,
                 source_ref: context.ref,

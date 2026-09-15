@@ -26,7 +26,7 @@ Clone or install the package into your Concrete CMS project and run Composer:
 composer install
 ```
 
-If you are installing it as a package in a Concrete site, add the package to your project in the usual way for your setup. Once installed, the package registers a storage type named `S3 Storage` and creates a dashboard page at `/dashboard/s3_storage`.
+If you are installing it as a package in a Concrete site, add the package to your project in the usual way for your setup. Once installed, the package registers a storage type named `S3 Storage` and creates a dashboard page at `/dashboard/aws_storage`.
 
 ## Package setup
 
@@ -65,7 +65,7 @@ The package includes a dashboard page for migrating files from one storage locat
 Navigate to:
 
 ```text
-/dashboard/s3_storage
+/dashboard/aws_storage
 ```
 
 Select:

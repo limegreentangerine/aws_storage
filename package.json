@@ -1,14 +1,14 @@
 {
-	"name": "s3_storage",
+	"name": "aws_storage",
 	"version": "1.0.0",
 	"description": "",
-	"homepage": "https://github.com/limegreentangerine/s3_storage#readme",
+	"homepage": "https://github.com/limegreentangerine/aws_storage#readme",
 	"bugs": {
-		"url": "https://github.com/limegreentangerine/s3_storage/issues"
+		"url": "https://github.com/limegreentangerine/aws_storage/issues"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/limegreentangerine/s3_storage.git"
+		"url": "git+https://github.com/limegreentangerine/aws_storage.git"
 	},
 	"license": "ISC",
 	"author": "",

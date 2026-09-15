@@ -5,8 +5,8 @@ namespace Tests;
 use Concrete\Core\File\Command\FileCommand;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
-use S3Storage\Command\MoveStorageLocationCommand;
-use S3Storage\Command\MoveStorageLocationCommandHandler;
+use AwsStorage\Command\MoveStorageLocationCommand;
+use AwsStorage\Command\MoveStorageLocationCommandHandler;
 
 #[CoversClass(MoveStorageLocationCommand::class)]
 #[CoversClass(MoveStorageLocationCommandHandler::class)]

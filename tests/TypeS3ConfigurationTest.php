@@ -2,7 +2,7 @@
 
 namespace Tests;
 
-use Concrete\Package\S3Storage\File\StorageLocation\Configuration\TypeS3Configuration;
+use Concrete\Package\AwsStorage\File\StorageLocation\Configuration\TypeS3Configuration;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

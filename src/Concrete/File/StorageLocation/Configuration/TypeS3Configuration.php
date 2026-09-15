@@ -1,6 +1,6 @@
 <?php
 
-namespace Concrete\Package\S3Storage\File\StorageLocation\Configuration;
+namespace Concrete\Package\AwsStorage\File\StorageLocation\Configuration;
 
 use Aws\S3\S3Client;
 use Concrete\Core\Http\Request;

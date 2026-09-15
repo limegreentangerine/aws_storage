@@ -1,6 +1,6 @@
 <?php defined('C5_EXECUTE') or die('Access Denied.'); ?>
 
-<?php if ((isset($locations) && count($locations) > 1) && isset($token) && isset($view)) { ?>
+<?php if ((isset($locations) && count($locations) > 1) && isset($token) && isset($view) && isset($form)) { ?>
     <form method="post" action="<?php echo $view->action('save'); ?>">
         <?php echo $token->output('submit') ?>
 
@@ -49,5 +49,5 @@
         </div>
     </form>
 <?php } else { ?>
-    <div class="alert alert-info"><?php echo t('More than one Storage Location must be defined <a href="%s">here</a>', URL::to('/dashboard/system/files/storage')); ?></div>
+    <div class="alert alert-info"><?php echo t('More than one Storage Location must be defined <a href="%s">here</a>', \URL::to('/dashboard/system/files/storage')); ?></div>
 <?php } ?>

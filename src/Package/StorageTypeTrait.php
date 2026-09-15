@@ -1,6 +1,6 @@
 <?php
 
-namespace S3Storage\Package;
+namespace AwsStorage\Package;
 
 use Concrete\Core\File\StorageLocation\Type\Type as StorageType;
 

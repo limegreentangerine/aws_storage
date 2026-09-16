@@ -2,7 +2,7 @@
 	"name": "limegreentangerine/aws_storage",
 	"description": "Adds S3 storage options to Concrete CMS",
 	"type": "concrete5-package",
-	"license": "MIT",
+	"license": "proprietary",
 	"autoload": {
 		"psr-4": {
 			"AwsStorage\\": "src/"

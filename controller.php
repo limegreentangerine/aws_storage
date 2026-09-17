@@ -3,14 +3,14 @@
 namespace Concrete\Package\AwsStorage;
 
 use Core;
-use AwsStorage\Package\PageTrait;
-use Concrete\Core\Package\Package;
-use AwsStorage\Package\StorageTypeTrait;
+use Concrete\Core\Entity\Package;
+use ClassKit\Package\Traits\PageTrait;
+use ClassKit\Package\PackageController;
+use Concrete\Core\File\StorageLocation\Type\Type as StorageType;
 
-class Controller extends Package
+class Controller extends PackageController
 {
     use PageTrait;
-    use StorageTypeTrait;
 
     /**
      * The packages handle.
@@ -46,15 +46,6 @@ class Controller extends Package
     protected $phpVersionRequired = '8.4';
 
     /**
-     * Package service providers to register.
-     *
-     * eg. 'Concrete\Package\PackageHandle\Src\Providers\PackageServiceProvider'
-     *
-     * @var array
-     */
-    protected $providers = [];
-
-    /**
      * An array describing the package dependencies.
      * Keys are package handles.
      * Values may be:
@@ -76,7 +67,9 @@ class Controller extends Package
      *     'other_package_4' => ['2.0', '2.9'],
      * ]
      */
-    protected $packageDependencies = [];
+    protected $packageDependencies = [
+        'class_kit' => true,
+    ];
 
     /**
      * Package class autoloader registrations
@@ -89,15 +82,6 @@ class Controller extends Package
     protected $pkgAutoloaderRegistries = [
         'src' => '\AwsStorage',
     ];
-
-    /**
-     * Package tasks to register.
-     *
-     * eg. 'task_handle' => \PackageHandle\Command\Task\Controller\TaskHandleController::class,
-     *
-     * @var array
-     */
-    protected $tasks = [];
 
     /**
      * S3 Storage Regions
@@ -142,7 +126,28 @@ class Controller extends Package
         'sa-east-1' => 'South America (São Paulo)',
     ];
 
-    protected function installOrUpgrade(\Concrete\Core\Entity\Package $pkg): void
+    /**
+     * Add Remote Storage
+     * @param  string $handle Storage Type Handle
+     * @param  object $pkg    Package Object
+     * @param  string $name   Storage Type Name
+     * @return object Storage Type Object
+     */
+    protected function addStorageType($handle, $pkg, $name)
+    {
+        $st = StorageType::getByHandle($handle);
+        if (!is_object($st)) {
+            StorageType::add($handle, $name, $pkg);
+        }
+
+        return $st;
+    }
+
+    public function registerRoutes(): void {}
+
+    public function registerEvents(): void {}
+
+    public function installOrUpgrade(Package $pkg): void
     {
         $this->addStorageType('type_s3', $pkg, t('S3 Storage'));
         $this->addSinglePage('/dashboard/aws_storage', $pkg, t('AWS Storage'));
@@ -164,6 +169,9 @@ class Controller extends Package
     public function install()
     {
         $pkg = parent::install();
+        if (!$pkg) {
+            $pkg = Core::make('Concrete\Core\Package\PackageService')->getByHandle($this->pkgHandle);
+        }
         $this->installDatabase();
         $this->installOrUpgrade($pkg);
     }

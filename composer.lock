@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "343ce3e423833cb74eb3be03e89977b2",
+    "content-hash": "ab50b3726ef57882b1b538e9e33482c8",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -702,6 +702,88 @@
                 }
             ],
             "time": "2026-07-09T11:49:27+00:00"
+        },
+        {
+            "name": "limegreentangerine/class_kit",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:limegreentangerine/class_kit.git",
+                "reference": "9789c3609dbb9c76cff25c308483343be3fc09e3"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/limegreentangerine/class_kit/zipball/9789c3609dbb9c76cff25c308483343be3fc09e3",
+                "reference": "9789c3609dbb9c76cff25c308483343be3fc09e3",
+                "shasum": ""
+            },
+            "require-dev": {
+                "concrete5/core": "^9.2",
+                "friendsofphp/php-cs-fixer": "^3.95",
+                "php": "^8.4",
+                "phpunit/phpunit": "^11"
+            },
+            "type": "concrete5-package",
+            "autoload": {
+                "psr-4": {
+                    "ClassKit\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "ClassKit\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "phpunit"
+                ],
+                "test-coverage": [
+                    "phpunit --coverage-text"
+                ],
+                "format:php": [
+                    "php-cs-fixer fix"
+                ],
+                "format:php:check": [
+                    "php-cs-fixer check --diff"
+                ],
+                "format:js": [
+                    "npx prettier --write ."
+                ],
+                "format:js:check": [
+                    "npx prettier --check ."
+                ],
+                "format": [
+                    "@format:php",
+                    "@format:js"
+                ],
+                "format:check": [
+                    "@format:php:check",
+                    "@format:js:check"
+                ],
+                "post-install-cmd": [
+                    "npm install"
+                ]
+            },
+            "license": [
+                "proprietary"
+            ],
+            "authors": [
+                {
+                    "name": "Lee Jones",
+                    "email": "prolific.jones82@gmail.com"
+                },
+                {
+                    "name": "David Hendy",
+                    "email": "david@limegreentangerine.co.uk"
+                }
+            ],
+            "description": "Collection of helper classes for LGT packages.",
+            "support": {
+                "source": "https://github.com/limegreentangerine/class_kit/tree/1.0.0",
+                "issues": "https://github.com/limegreentangerine/class_kit/issues"
+            },
+            "time": "2026-09-17T14:34:35+00:00"
         },
         {
             "name": "mtdowling/jmespath.php",

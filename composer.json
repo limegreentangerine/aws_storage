@@ -18,7 +18,8 @@
 	"require": {
 		"php": "^8.4",
 		"aws/aws-sdk-php": "^3.395",
-		"league/flysystem-aws-s3-v3": "^1.0"
+		"league/flysystem-aws-s3-v3": "^1.0",
+		"limegreentangerine/class_kit": "^1.0"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "^13.3",
@@ -45,5 +46,11 @@
 			"@format:php:check",
 			"@format:js:check"
 		]
-	}
+	},
+	"repositories": [
+		{
+			"type": "composer",
+			"url": "https://packages.limegreentangerine.net"
+		}
+	]
 }

@@ -19,7 +19,7 @@
 		"php": "^8.4",
 		"aws/aws-sdk-php": "^3.395",
 		"league/flysystem-aws-s3-v3": "^1.0",
-		"limegreentangerine/class_kit": "^1.0"
+		"limegreentangerine/class_kit": "^2.0"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "^13.3",

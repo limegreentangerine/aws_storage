@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b5063c6a70afdd52fe65aed24b3eb671",
+    "content-hash": "1577b1dd4f673c405b34bd0361c13993",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -705,16 +705,16 @@
         },
         {
             "name": "limegreentangerine/class_kit",
-            "version": "1.0.6",
+            "version": "2.0.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/limegreentangerine/ClassKit.git",
-                "reference": "466b96812706890c395711acaeac3ca5b8f14a19"
+                "reference": "318aee48c660d4a685265f601e5d6c6f9be7a206"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/limegreentangerine/ClassKit/zipball/466b96812706890c395711acaeac3ca5b8f14a19",
-                "reference": "466b96812706890c395711acaeac3ca5b8f14a19",
+                "url": "https://api.github.com/repos/limegreentangerine/ClassKit/zipball/318aee48c660d4a685265f601e5d6c6f9be7a206",
+                "reference": "318aee48c660d4a685265f601e5d6c6f9be7a206",
                 "shasum": ""
             },
             "require-dev": {
@@ -723,6 +723,9 @@
                 "php": "^8.4",
                 "phpunit/phpunit": "^11"
             },
+            "bin": [
+                "bin/create-svelte-component"
+            ],
             "type": "concrete5-package",
             "autoload": {
                 "psr-4": {
@@ -746,9 +749,9 @@
             "description": "Collection of helper classes for LGT packages.",
             "support": {
                 "issues": "https://github.com/limegreentangerine/ClassKit/issues",
-                "source": "https://github.com/limegreentangerine/ClassKit/tree/1.0.6"
+                "source": "https://github.com/limegreentangerine/ClassKit/tree/2.0.3"
             },
-            "time": "2026-10-05T11:54:15+00:00"
+            "time": "2026-11-04T11:22:22+00:00"
         },
         {
             "name": "mtdowling/jmespath.php",
@@ -15211,5 +15214,5 @@
         "php": "^8.4"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }

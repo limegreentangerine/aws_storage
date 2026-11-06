@@ -200,8 +200,8 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
             $e->add(t('Region required'));
         }
 
-        $pkg = $app->make('Concrete\Core\Package\PackageService')->getByHandle('lgt_toolkit');
-        if ($pkg && !in_array($data['region'], $pkg->getRegions())) {
+        $pkg = $app->make('Concrete\Core\Package\PackageService')->getByHandle('aws_storage');
+        if ($pkg && !array_key_exists($data['region'], $pkg->getRegions())) {
             $e->add(t('Not a valid region'));
         }
 

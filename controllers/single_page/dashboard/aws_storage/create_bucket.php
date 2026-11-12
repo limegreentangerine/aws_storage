@@ -83,6 +83,129 @@ class CreateBucket extends DashboardPageController
         }
     }
 
+    protected function getBasePolicyArray(string $bucketName): array
+    {
+        return [
+            'Version' => '2012-10-17',
+            'Statement' => [
+                [
+                    'Effect' => 'Allow',
+                    'Action' => [
+                        's3:ListBucket',
+                    ],
+                    'Resource' => "arn:aws:s3:::{$bucketName}",
+                ],
+                [
+                    'Effect' => 'Allow',
+                    'Action' => [
+                        's3:GetObject',
+                        's3:PutObject',
+                        's3:DeleteObject',
+                    ],
+                    'Resource' => "arn:aws:s3:::{$bucketName}/*",
+                ],
+            ],
+        ];
+    }
+
+    protected function createUser(string $username): \Aws\Result
+    {
+        return $this->iam->createUser([
+            'UserName' => $username,
+            'Path' => '/s3-storage/',
+        ]);
+    }
+
+    protected function createCloudfrontAccessControl(string $bucketName, string $bucketUsername): \Aws\Result
+    {
+        return $this->cloudfront->createOriginAccessControl([
+            'OriginAccessControlConfig' => [
+                'Name' => $bucketUsername . '-oac',
+                'Description' => 'Access control for ' . $bucketName . ' bucket',
+                'SigningProtocol' => 'sigv4',
+                'SigningBehavior' => 'always',
+                'OriginAccessControlOriginType' => 's3',
+            ],
+        ]);
+    }
+
+    protected function createCloudfrontDistribution(string $bucketName, string $bucketUsername, string $oacId): \Aws\Result
+    {
+
+        return $this->cloudfront->createDistribution([
+            'DistributionConfig' => [
+                'CallerReference' => $bucketUsername . '-' . time(),
+                'Comment' => $bucketName . ' Storage',
+                'Enabled' => true,
+                'Origins' => [
+                    'Quantity' => 1,
+                    'Items' => [
+                        [
+                            'Id' => $bucketUsername . '-origin',
+                            'DomainName' => "{$bucketName}.s3.eu-west-2.amazonaws.com",
+                            'OriginAccessControlId' => $oacId,
+                            'S3OriginConfig' => [
+                                'OriginAccessIdentity' => '',
+                            ],
+                        ],
+                    ],
+                ],
+                'DefaultCacheBehavior' => [
+                    'TargetOriginId' => $bucketUsername . '-origin',
+                    'ViewerProtocolPolicy' => 'redirect-to-https',
+                    'AllowedMethods' => [
+                        'Quantity' => 2,
+                        'Items' => ['GET', 'HEAD'],
+                        'CachedMethods' => [
+                            'Quantity' => 2,
+                            'Items' => ['GET', 'HEAD'],
+                        ],
+                    ],
+                    'Compress' => true,
+                    'CachePolicyId' => '658327ea-f89d-4fab-a63d-7e88639e58f6',
+                ],
+                'DefaultRootObject' => '',
+                'ViewerCertificate' => [
+                    'CloudFrontDefaultCertificate' => true,
+                ],
+                'Restrictions' => [
+                    'GeoRestriction' => [
+                        'RestrictionType' => 'none',
+                        'Quantity' => 0,
+                    ],
+                ],
+            ],
+        ]);
+    }
+
+    protected function updateBucketPolicy(string $bucketName, string $distributionArn): \Aws\Result
+    {
+        $policy = array_merge($this->getBasePolicyArray($bucketName), [
+            'Version' => '2012-10-17',
+            'Statement' => [
+                [
+                    'Sid' => 'AllowCloudFrontAccess',
+                    'Effect' => 'Allow',
+                    'Principal' => [
+                        'Service' => 'cloudfront.amazonaws.com',
+                    ],
+                    'Action' => 's3:GetObject',
+                    'Resource' => "arn:aws:s3:::{$bucketName}/*",
+                    'Condition' => [
+                        'StringEquals' => [
+                            'AWS:SourceArn' => $distributionArn,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        return $this->s3->putBucketPolicy([
+            'Bucket' => $bucketName,
+            'Policy' => json_encode($policy),
+        ]);
+    }
+
     public function on_start()
     {
         parent::on_start();
@@ -171,7 +294,7 @@ class CreateBucket extends DashboardPageController
                         $credentials['cloudfront_url'] = 'https://' . $distribution['Distribution']['DomainName'];
                         $distributionArn = $distribution['Distribution']['ARN'];
 
-                        $this->updateBucketPolicy($bucketName,  $distributionArn);
+                        $this->updateBucketPolicy($bucketName, $distributionArn);
                     }
 
                     $this->addStorageLocation($credentials['bucket'], $credentials);
@@ -183,128 +306,5 @@ class CreateBucket extends DashboardPageController
                 $this->error->add($e->getAwsErrorMessage() ?? $e->getMessage(), $e->getAwsErrorCode());
             }
         }
-    }
-
-    protected function getBasePolicyArray(string $bucketName): array
-    {
-        return [
-            'Version' => '2012-10-17',
-            'Statement' => [
-                [
-                    'Effect' => 'Allow',
-                    'Action' => [
-                        's3:ListBucket',
-                    ],
-                    'Resource' => "arn:aws:s3:::{$bucketName}",
-                ],
-                [
-                    'Effect' => 'Allow',
-                    'Action' => [
-                        's3:GetObject',
-                        's3:PutObject',
-                        's3:DeleteObject',
-                    ],
-                    'Resource' => "arn:aws:s3:::{$bucketName}/*",
-                ],
-            ],
-        ];
-    }
-
-    protected function createUser(string $username): \Aws\Result
-    {
-        return $this->iam->createUser([
-            'UserName' => $username,
-            'Path' => '/s3-storage/',
-        ]);
-    }
-
-    protected function createCloudfrontAccessControl(string $bucketName, string $bucketUsername): \Aws\Result
-    {
-        return $this->cloudfront->createOriginAccessControl([
-            'OriginAccessControlConfig' => [
-                'Name' => $bucketUsername . '-oac',
-                'Description' => 'Access control for ' . $bucketName . ' bucket',
-                'SigningProtocol' => 'sigv4',
-                'SigningBehavior' => 'always',
-                'OriginAccessControlOriginType' => 's3',
-            ],
-        ]);
-    }
-
-    protected function createCloudfrontDistribution(string $bucketName, string $bucketUsername, string $oacId): \Aws\Result
-    {
-
-        return $this->cloudfront->createDistribution([
-            'DistributionConfig' => [
-                'CallerReference' => $bucketUsername  . '-' . time(),
-                'Comment' => $bucketName . ' Storage',
-                'Enabled' => true,
-                'Origins' => [
-                    'Quantity' => 1,
-                    'Items' => [
-                        [
-                            'Id' => $bucketUsername . '-origin',
-                            'DomainName' => "{$bucketName}.s3.eu-west-2.amazonaws.com",
-                            'OriginAccessControlId' => $oacId,
-                            'S3OriginConfig' => [
-                                'OriginAccessIdentity' => '',
-                            ],
-                        ],
-                    ],
-                ],
-                'DefaultCacheBehavior' => [
-                    'TargetOriginId' => $bucketUsername . '-origin',
-                    'ViewerProtocolPolicy' => 'redirect-to-https',
-                    'AllowedMethods' => [
-                        'Quantity' => 2,
-                        'Items' => ['GET', 'HEAD'],
-                        'CachedMethods' => [
-                            'Quantity' => 2,
-                            'Items' => ['GET', 'HEAD'],
-                        ],
-                    ],
-                    'Compress' => true,
-                    'CachePolicyId' => '658327ea-f89d-4fab-a63d-7e88639e58f6',
-                ],
-                'DefaultRootObject' => '',
-                'ViewerCertificate' => [
-                    'CloudFrontDefaultCertificate' => true,
-                ],
-                'Restrictions' => [
-                    'GeoRestriction' => [
-                        'RestrictionType' => 'none',
-                        'Quantity' => 0,
-                    ],
-                ],
-            ],
-        ]);
-    }
-
-    protected function updateBucketPolicy(string $bucketName, string $distributionArn): \Aws\Result
-    {
-        $policy = array_merge($this->getBasePolicyArray($bucketName), [
-            'Version' => '2012-10-17',
-            'Statement' => [
-                [
-                    'Sid' => 'AllowCloudFrontAccess',
-                    'Effect' => 'Allow',
-                    'Principal' => [
-                        'Service' => 'cloudfront.amazonaws.com',
-                    ],
-                    'Action' => 's3:GetObject',
-                    'Resource' => "arn:aws:s3:::{$bucketName}/*",
-                    'Condition' => [
-                        'StringEquals' => [
-                            'AWS:SourceArn' => $distributionArn,
-                        ],
-                    ],
-                ],
-            ],
-        ]);
-
-        return $this->s3->putBucketPolicy([
-            'Bucket' => $bucketName,
-            'Policy' => json_encode($policy),
-        ]);
     }
 }

@@ -174,7 +174,7 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
     public function loadFromAwsSdk(array $credentials): void
     {
         $this->setStorageBucket($credentials['bucket']);
-        $this->setCloudfrontUrl($credentials['cloudfrontUrl'] ?? '');
+        $this->setCloudfrontUrl($credentials['cloudfront_url'] ?? '');
         $this->setStorageKey($credentials['access_key']);
         $this->setStorageSecret($credentials['secret_key']);
         $this->setRegion($credentials['region']);

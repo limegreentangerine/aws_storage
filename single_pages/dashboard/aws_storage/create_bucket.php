@@ -44,10 +44,12 @@
         </div>
     </fieldset>
 
-    <fieldset>
-        <legend><?php echo t('Cloudfront Settings'); ?></legend>
-        TODO
-    </fieldset>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" value="1" id="useCloudfront" name="useCloudfront" checked />
+        <label class="form-check-label" for="useCloudfront">
+            <?php echo t('Use Cloudfront Caching'); ?>
+        </label>
+    </div>
 
     <div class="ccm-dashboard-form-actions-wrapper">
         <div class="ccm-dashboard-form-actions">

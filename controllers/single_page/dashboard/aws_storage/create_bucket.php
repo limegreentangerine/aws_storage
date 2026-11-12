@@ -4,6 +4,7 @@ namespace Concrete\Package\AwsStorage\Controller\SinglePage\Dashboard\AwsStorage
 
 use Aws\S3\S3Client;
 use Aws\Iam\IamClient;
+use Aws\CloudFront\CloudFrontClient;
 use Concrete\Core\Package\PackageService;
 use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\File\StorageLocation\Type\Type;
@@ -22,6 +23,7 @@ class CreateBucket extends DashboardPageController
     protected TypeEntity $type;
     protected S3Client $s3;
     protected IamClient $iam;
+    protected CloudFrontClient $cloudfront;
 
     protected function createBucket(string $name, string $location): \Aws\Result
     {
@@ -33,29 +35,9 @@ class CreateBucket extends DashboardPageController
         ]);
     }
 
-    protected function getBucketPolicy(string $bucketName, string $userName)
+    protected function getBucketPolicy(string $bucketName, string $userName): ?string
     {
-        $policy = [
-            'Version' => '2012-10-17',
-            'Statement' => [
-                [
-                    'Effect' => 'Allow',
-                    'Action' => [
-                        's3:ListBucket',
-                    ],
-                    'Resource' => "arn:aws:s3:::{$bucketName}",
-                ],
-                [
-                    'Effect' => 'Allow',
-                    'Action' => [
-                        's3:GetObject',
-                        's3:PutObject',
-                        's3:DeleteObject',
-                    ],
-                    'Resource' => "arn:aws:s3:::{$bucketName}/*",
-                ],
-            ],
-        ];
+        $policy = $this->getBasePolicyArray($bucketName);
 
         try {
             $result = $this->iam->createPolicy([
@@ -66,11 +48,11 @@ class CreateBucket extends DashboardPageController
             return $result['Policy']['Arn'];
         } catch (\Aws\Exception\AwsException $e) {
             $this->error->add($e->getAwsErrorMessage() ?? $e->getMessage(), $e->getAwsErrorCode());
-            return false;
+            return null;
         }
     }
 
-    protected function addStorageLocation(string $bucketName, array $credentials)
+    protected function addStorageLocation(string $bucketName, array $credentials): void
     {
         /** @var TypeS3Configuration $configuration */
         $configuration = $this->type->getConfigurationObject();
@@ -116,6 +98,10 @@ class CreateBucket extends DashboardPageController
 
         $this->s3 = new S3Client($config);
         $this->iam = new IamClient($config);
+        $this->cloudfront = new CloudFrontClient([
+            'version' => 'latest',
+            'region' => 'us-east-1',
+        ]);
 
         $pkg = app()->make(PackageService::class)->getByHandle('aws_storage');
         if (!$pkg) {
@@ -127,6 +113,8 @@ class CreateBucket extends DashboardPageController
         if (!$this->type) {
             throw new UserMessageException(t('S3 storage type not available'));
         }
+
+        // TODO: get current storage locations and check for type_s3, I don't want more than one of these for now
     }
 
     public function create()
@@ -142,6 +130,7 @@ class CreateBucket extends DashboardPageController
         $bucketName = $this->request->get('bucketName');
         $bucketLocation = $this->request->get('bucketLocation');
         $bucketUsername = $this->request->get('bucketUsername');
+        $useCloudfront = ($this->request->get('useCloudfront')) ? true : false;
         $this->validate($bucketName, $bucketLocation, $bucketUsername);
 
         $this->set('formContent', [
@@ -155,6 +144,7 @@ class CreateBucket extends DashboardPageController
                 $this->createBucket($bucketName, $bucketLocation);
                 $this->createUser($bucketUsername);
                 $bucketPolicy = $this->getBucketPolicy($bucketName, $bucketUsername);
+
                 if ($bucketPolicy) {
                     $this->iam->attachUserPolicy([
                         'UserName' => $bucketUsername,
@@ -172,6 +162,18 @@ class CreateBucket extends DashboardPageController
                         'region' => $bucketLocation,
                     ];
 
+
+                    if ($useCloudfront) {
+                        $oac = $this->createCloudfrontAccessControl($bucketName, $bucketUsername);
+                        $oacId = $oac['OriginAccessControl']['Id'];
+
+                        $distribution = $this->createCloudfrontDistribution($bucketName, $bucketUsername, $oacId);
+                        $credentials['cloudfront_url'] = 'https://' . $distribution['Distribution']['DomainName'];
+                        $distributionArn = $distribution['Distribution']['ARN'];
+
+                        $this->updateBucketPolicy($bucketName,  $distributionArn);
+                    }
+
                     $this->addStorageLocation($credentials['bucket'], $credentials);
 
                     $this->flash('success', t('Bucket created for %s', $bucketName));
@@ -183,11 +185,126 @@ class CreateBucket extends DashboardPageController
         }
     }
 
-    public function createUser(string $username): \Aws\Result
+    protected function getBasePolicyArray(string $bucketName): array
+    {
+        return [
+            'Version' => '2012-10-17',
+            'Statement' => [
+                [
+                    'Effect' => 'Allow',
+                    'Action' => [
+                        's3:ListBucket',
+                    ],
+                    'Resource' => "arn:aws:s3:::{$bucketName}",
+                ],
+                [
+                    'Effect' => 'Allow',
+                    'Action' => [
+                        's3:GetObject',
+                        's3:PutObject',
+                        's3:DeleteObject',
+                    ],
+                    'Resource' => "arn:aws:s3:::{$bucketName}/*",
+                ],
+            ],
+        ];
+    }
+
+    protected function createUser(string $username): \Aws\Result
     {
         return $this->iam->createUser([
             'UserName' => $username,
             'Path' => '/s3-storage/',
+        ]);
+    }
+
+    protected function createCloudfrontAccessControl(string $bucketName, string $bucketUsername): \Aws\Result
+    {
+        return $this->cloudfront->createOriginAccessControl([
+            'OriginAccessControlConfig' => [
+                'Name' => $bucketUsername . '-oac',
+                'Description' => 'Access control for ' . $bucketName . ' bucket',
+                'SigningProtocol' => 'sigv4',
+                'SigningBehavior' => 'always',
+                'OriginAccessControlOriginType' => 's3',
+            ],
+        ]);
+    }
+
+    protected function createCloudfrontDistribution(string $bucketName, string $bucketUsername, string $oacId): \Aws\Result
+    {
+
+        return $this->cloudfront->createDistribution([
+            'DistributionConfig' => [
+                'CallerReference' => $bucketUsername  . '-' . time(),
+                'Comment' => $bucketName . ' Storage',
+                'Enabled' => true,
+                'Origins' => [
+                    'Quantity' => 1,
+                    'Items' => [
+                        [
+                            'Id' => $bucketUsername . '-origin',
+                            'DomainName' => "{$bucketName}.s3.eu-west-2.amazonaws.com",
+                            'OriginAccessControlId' => $oacId,
+                            'S3OriginConfig' => [
+                                'OriginAccessIdentity' => '',
+                            ],
+                        ],
+                    ],
+                ],
+                'DefaultCacheBehavior' => [
+                    'TargetOriginId' => $bucketUsername . '-origin',
+                    'ViewerProtocolPolicy' => 'redirect-to-https',
+                    'AllowedMethods' => [
+                        'Quantity' => 2,
+                        'Items' => ['GET', 'HEAD'],
+                        'CachedMethods' => [
+                            'Quantity' => 2,
+                            'Items' => ['GET', 'HEAD'],
+                        ],
+                    ],
+                    'Compress' => true,
+                    'CachePolicyId' => '658327ea-f89d-4fab-a63d-7e88639e58f6',
+                ],
+                'DefaultRootObject' => '',
+                'ViewerCertificate' => [
+                    'CloudFrontDefaultCertificate' => true,
+                ],
+                'Restrictions' => [
+                    'GeoRestriction' => [
+                        'RestrictionType' => 'none',
+                        'Quantity' => 0,
+                    ],
+                ],
+            ],
+        ]);
+    }
+
+    protected function updateBucketPolicy(string $bucketName, string $distributionArn): \Aws\Result
+    {
+        $policy = array_merge($this->getBasePolicyArray($bucketName), [
+            'Version' => '2012-10-17',
+            'Statement' => [
+                [
+                    'Sid' => 'AllowCloudFrontAccess',
+                    'Effect' => 'Allow',
+                    'Principal' => [
+                        'Service' => 'cloudfront.amazonaws.com',
+                    ],
+                    'Action' => 's3:GetObject',
+                    'Resource' => "arn:aws:s3:::{$bucketName}/*",
+                    'Condition' => [
+                        'StringEquals' => [
+                            'AWS:SourceArn' => $distributionArn,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        return $this->s3->putBucketPolicy([
+            'Bucket' => $bucketName,
+            'Policy' => json_encode($policy),
         ]);
     }
 }

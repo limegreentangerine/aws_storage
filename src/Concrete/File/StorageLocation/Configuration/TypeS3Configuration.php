@@ -171,6 +171,16 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
         $this->setApiVersion($data['apiVersion']);
     }
 
+    public function loadFromAwsSdk(array $credentials): void
+    {
+        $this->setStorageBucket($credentials['bucket']);
+        $this->setCloudfrontUrl($credentials['cloudfrontUrl'] ?? '');
+        $this->setStorageKey($credentials['access_key']);
+        $this->setStorageSecret($credentials['secret_key']);
+        $this->setRegion($credentials['region']);
+        $this->setApiVersion($credentials['apiVersion'] ?? $this->apiVersion);
+    }
+
     public function validateRequest(Request $req)
     {
         $app = Application::getFacadeApplication();

@@ -1,7 +1,7 @@
 <?php defined('C5_EXECUTE') or die('Access Denied');
-    $form = \Core::make('helper/form');
-    $pkg = \Core::make('Concrete\Core\Package\PackageService')->getByHandle('aws_storage');
-    $regions = $pkg->getRegions();
+$form = \Core::make('helper/form');
+$pkg = \Core::make('Concrete\Core\Package\PackageService')->getByHandle('aws_storage');
+$regions = $pkg->getRegions();
 ?>
 
 <div class="form-group">
@@ -38,7 +38,7 @@
 
 <div class="form-group">
     <?php echo $form->label('region', t('Amazon S3 Region')); ?>
-    <?php echo $form->select('fslType[region]', $regions, (isset($configuration) && is_object($configuration)) ? $configuration->getRegion(): false); ?>
+    <?php echo $form->select('fslType[region]', $regions, (isset($configuration) && is_object($configuration)) ? $configuration->getRegion() : false); ?>
 </div>
 
 <div class="form-group">

@@ -14,7 +14,7 @@
                         <option value=""><?php echo t('Current Location'); ?></option>
                         <?php foreach ($locations as $location) {
                             $selected = (isset($formContent) && $formContent['currentLocation'] == $location->getID()) ? 'selected' : '';
-                        ?>
+                            ?>
                             <option value="<?php echo $location->getID(); ?>" <?php echo $selected; ?>>
                                 <?php echo $location->getDisplayName(); ?>
                             </option>
@@ -31,7 +31,7 @@
                         <option value=""><?php echo t('Target Location'); ?></option>
                         <?php foreach ($locations as $location) {
                             $selected = (isset($formContent) && $formContent['targetLocation'] == $location->getID()) ? 'selected' : '';
-                        ?>
+                            ?>
                             <option value="<?php echo $location->getID(); ?>" <?php echo $selected; ?>>
                                 <?php echo $location->getDisplayName(); ?>
                             </option>
@@ -44,7 +44,7 @@
 
         <div class="ccm-dashboard-form-actions-wrapper">
             <div class="ccm-dashboard-form-actions">
-                <?php echo $form->submit('save', t('Create Queue'), array('class' => 'btn btn-primary float-end')); ?>
+                <?php echo $form->submit('save', t('Create Queue'), ['class' => 'btn btn-primary float-end']); ?>
             </div>
         </div>
     </form>

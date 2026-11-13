@@ -2,9 +2,9 @@
 
 namespace AwsStorage;
 
-use League\Flysystem\AwsS3v3\AwsS3Adapter;
-use League\Flysystem\Config;
 use League\Flysystem\Util;
+use League\Flysystem\Config;
+use League\Flysystem\AwsS3v3\AwsS3Adapter;
 use Concrete\Core\Support\Facade\Application;
 
 /**
@@ -12,7 +12,7 @@ use Concrete\Core\Support\Facade\Application;
  */
 class AwsS3AdapterWrapper extends AwsS3Adapter
 {
-    private function log($level, $message)
+    private function log(string $level, string $message)
     {
         try {
             $app = Application::getFacadeApplication();
@@ -30,20 +30,20 @@ class AwsS3AdapterWrapper extends AwsS3Adapter
     /**
      * Handle upload without ACL for ACL-disabled buckets
      */
-    private function uploadWithoutACL($path, $body, Config $config)
+    private function uploadWithoutACL(string $path, mixed $body, Config $config)
     {
         $key = $this->applyPathPrefix($path);
         $options = $this->getOptionsFromConfig($config);
-        
+
         // Remove ACL from options
         unset($options['ACL']);
 
         if (!$this->isOnlyDir($path)) {
-            if ( ! isset($options['ContentType'])) {
+            if (!isset($options['ContentType'])) {
                 $options['ContentType'] = Util::guessMimeType($path, $body);
             }
 
-            if ( ! isset($options['ContentLength'])) {
+            if (!isset($options['ContentLength'])) {
                 $options['ContentLength'] = is_resource($body) ? Util::getStreamSize($body) : Util::contentSize($body);
             }
 
@@ -74,7 +74,7 @@ class AwsS3AdapterWrapper extends AwsS3Adapter
         return $this->normalizeResponse($options, $path);
     }
 
-    private function isOnlyDir($path)
+    private function isOnlyDir(string $path)
     {
         return substr($path, -1) === '/';
     }
@@ -105,7 +105,7 @@ class AwsS3AdapterWrapper extends AwsS3Adapter
         }
     }
 
-    public function put($path, $contents, Config $config)
+    public function put(string $path, mixed $contents, Config $config)
     {
         $this->log('info', "AwsS3Adapter::put() called with path: $path");
         try {
@@ -118,7 +118,7 @@ class AwsS3AdapterWrapper extends AwsS3Adapter
         }
     }
 
-    public function putStream($path, $resource, Config $config)
+    public function putStream(string $path, mixed $resource, Config $config)
     {
         $this->log('info', "AwsS3Adapter::putStream() called with path: $path");
         try {
@@ -201,7 +201,7 @@ class AwsS3AdapterWrapper extends AwsS3Adapter
         $this->log('info', "AwsS3Adapter::has() called with path: $path");
         try {
             $result = parent::has($path);
-            $this->log('info', "AwsS3Adapter::has() result: " . ($result ? 'true' : 'false'));
+            $this->log('info', 'AwsS3Adapter::has() result: ' . ($result ? 'true' : 'false'));
             return $result;
         } catch (\Exception $e) {
             $this->log('error', "AwsS3Adapter::has() failed for path: $path - " . $e->getMessage());
@@ -235,5 +235,3 @@ class AwsS3AdapterWrapper extends AwsS3Adapter
         }
     }
 }
-
-

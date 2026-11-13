@@ -4,8 +4,8 @@ namespace Concrete\Package\AwsStorage\File\StorageLocation\Configuration;
 
 use Aws\S3\S3Client;
 use Concrete\Core\Http\Request;
-use League\Flysystem\AwsS3v3\AwsS3Adapter;
 use AwsStorage\AwsS3AdapterWrapper;
+use League\Flysystem\AwsS3v3\AwsS3Adapter;
 use Concrete\Core\Support\Facade\Application;
 use Concrete\Core\File\StorageLocation\Configuration\Configuration;
 use Concrete\Core\File\StorageLocation\Configuration\ConfigurationInterface;
@@ -29,7 +29,7 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
             'credentials' => [
                 'key' => $this->getStorageKey(),
                 'secret' => $this->getStorageSecret(),
-            ]
+            ],
         ]);
         return $client;
     }
@@ -264,7 +264,7 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
     {
         try {
             $client = $this->getClient();
-            
+
             // Log the adapter creation attempt
             $app = Application::getFacadeApplication();
             if ($app) {
@@ -273,19 +273,19 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
                     $log->info('Creating S3 adapter for bucket: ' . $this->getStorageBucket());
                 }
             }
-            
+
             $adapter = new AwsS3AdapterWrapper(
                 $client,
-                $this->getStorageBucket()
+                $this->getStorageBucket(),
             );
-            
+
             if ($app) {
                 $log = $app->make('log');
                 if ($log) {
                     $log->info('S3 adapter created successfully, class: ' . get_class($adapter));
                 }
             }
-            
+
             return $adapter;
         } catch (\Exception $e) {
             $app = Application::getFacadeApplication();
@@ -316,11 +316,11 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
             $url = ($this->getCloudfrontUrl() !== '' && $this->getCloudfrontUrl() !== null)
                 ? rtrim($this->getCloudfrontUrl(), '/') . '/' . $normalizedFile
                 : $this->getClient()->getObjectUrl($this->getStorageBucket(), $normalizedFile);
-            
+
             if ($app && ($log = $app->make('log'))) {
                 $log->info('Generated URL: ' . $url);
             }
-            
+
             return $url;
         } catch (\Exception $e) {
             if ($app && ($log = $app->make('log'))) {

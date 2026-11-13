@@ -26,7 +26,7 @@ class Controller extends PackageController
      *
      * @var string
      */
-    protected $pkgVersion = '1.0.0';
+    protected $pkgVersion = '1.1.0';
 
     /**
      * The minimum Concrete version compatible with the package.
@@ -149,8 +149,13 @@ class Controller extends PackageController
 
     public function installOrUpgrade(Package $pkg): void
     {
+        // add storage type
         $this->addStorageType('type_s3', $pkg, t('S3 Storage'));
+
+        // add dashboard pages
         $this->addSinglePage('/dashboard/aws_storage', $pkg, t('AWS Storage'));
+        $this->addSinglePage('/dashboard/aws_storage/move_files', $pkg, t('Move Files'));
+        $this->addSinglePage('/dashboard/aws_storage/create_bucket', $pkg, t('Create Bucket'));
     }
 
     public function getPackageName()

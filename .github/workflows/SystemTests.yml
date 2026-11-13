@@ -1,7 +1,6 @@
 name: SystemTests
 
 on:
-  push:
   pull_request:
 
 permissions:

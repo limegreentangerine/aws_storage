@@ -4,7 +4,8 @@ namespace Concrete\Package\AwsStorage\File\StorageLocation\Configuration;
 
 use Aws\S3\S3Client;
 use Concrete\Core\Http\Request;
-use Aws\Credentials\Credentials;
+use AwsStorage\AwsS3AdapterWrapper;
+use AwsStorage\Logger\AwsStorageLogger;
 use League\Flysystem\AwsS3v3\AwsS3Adapter;
 use Concrete\Core\Support\Facade\Application;
 use Concrete\Core\File\StorageLocation\Configuration\Configuration;
@@ -14,6 +15,7 @@ use Concrete\Core\File\StorageLocation\Configuration\DeferredConfigurationInterf
 class TypeS3Configuration extends Configuration implements ConfigurationInterface, DeferredConfigurationInterface
 {
     protected string $storageBucket = '';
+    protected string $bucketUsername = '';
     protected string $cloudfrontUrl = '';
     protected string $storageKey = '';
     protected string $storageSecret = '';
@@ -25,7 +27,10 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
         $client = new S3Client([
             'region' => $this->getRegion(),
             'version' => $this->getApiVersion(),
-            'credentials' => new Credentials($this->getStorageKey(), $this->getStorageSecret()),
+            'credentials' => [
+                'key' => $this->getStorageKey(),
+                'secret' => $this->getStorageSecret(),
+            ],
         ]);
         return $client;
     }
@@ -46,6 +51,26 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
     public function setStorageBucket(string $storageBucket): self
     {
         $this->storageBucket = $storageBucket;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of bucketUsername
+     */
+    public function getBucketUsername(): string
+    {
+        return $this->bucketUsername;
+    }
+
+    /**
+     * Set the value of bucketUsername
+     *
+     * @return self
+     */
+    public function setBucketUsername(string $bucketUsername): self
+    {
+        $this->bucketUsername = $bucketUsername;
 
         return $this;
     }
@@ -164,11 +189,23 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
     {
         $data = $req->get('fslType');
         $this->setStorageBucket($data['storageBucket']);
+        $this->setBucketUsername($data['bucketUsername']);
         $this->setCloudfrontUrl($data['cloudfrontUrl']);
         $this->setStorageKey($data['storageKey']);
         $this->setStorageSecret($data['storageSecret']);
         $this->setRegion($data['region']);
         $this->setApiVersion($data['apiVersion']);
+    }
+
+    public function loadFromAwsSdk(array $credentials): void
+    {
+        $this->setStorageBucket($credentials['bucket']);
+        $this->setBucketUsername($credentials['bucketUsername']);
+        $this->setCloudfrontUrl($credentials['cloudfront_url'] ?? '');
+        $this->setStorageKey($credentials['access_key']);
+        $this->setStorageSecret($credentials['secret_key']);
+        $this->setRegion($credentials['region']);
+        $this->setApiVersion($credentials['apiVersion'] ?? $this->apiVersion);
     }
 
     public function validateRequest(Request $req)
@@ -179,10 +216,6 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
         $vstrings = $app->make('helper/validation/strings');
 
         $data = $req->get('fslType');
-
-        if (!$vstrings->notempty($data['storageBucket'])) {
-            $e->add(t('Storage Bucket required'));
-        }
 
         if (!$vstrings->notempty($data['storageBucket'])) {
             $e->add(t('Storage Bucket required'));
@@ -216,6 +249,13 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
             $this->setStorageSecret($data['storageSecret']);
             $this->setRegion($data['region']);
             $this->setApiVersion($data['apiVersion']);
+
+            try {
+                $client = $this->getClient();
+                $client->headBucket(['Bucket' => $data['storageBucket']]);
+            } catch (\Exception $ex) {
+                $e->add(t('Unable to connect to S3 bucket: %s', $ex->getMessage()));
+            }
         }
 
         return $e;
@@ -223,16 +263,72 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
 
     public function getAdapter(): AwsS3Adapter
     {
-        return new AwsS3Adapter($this->getClient(), $this->getStorageBucket());
+        try {
+            $client = $this->getClient();
+
+            // Log the adapter creation attempt
+            $app = Application::getFacadeApplication();
+            if ($app) {
+                $log = $app->make(AwsStorageLogger::class)->getLogger();
+                if ($log) {
+                    $log->info('Creating S3 adapter for bucket: ' . $this->getStorageBucket());
+                }
+            }
+
+            $adapter = new AwsS3AdapterWrapper(
+                $client,
+                $this->getStorageBucket(),
+            );
+
+            if ($app) {
+                $log = $app->make(AwsStorageLogger::class)->getLogger();
+                if ($log) {
+                    $log->info('S3 adapter created successfully, class: ' . get_class($adapter));
+                }
+            }
+
+            return $adapter;
+        } catch (\Exception $e) {
+            $app = Application::getFacadeApplication();
+            if ($app) {
+                $log = $app->make(AwsStorageLogger::class)->getLogger();
+                if ($log) {
+                    $log->error('Failed to create S3 adapter: ' . $e->getMessage());
+                    $log->debug($e->getTraceAsString());
+                }
+            }
+            throw new \RuntimeException('Failed to create S3 adapter: ' . $e->getMessage(), 0, $e);
+        }
     }
 
     public function getPublicURLToFile($file): string
     {
+        $app = Application::getFacadeApplication();
+        if ($app) {
+            $log = $app->make(AwsStorageLogger::class)->getLogger();
+            if ($log) {
+                $log->info('Getting public URL for file: ' . $file);
+            }
+        }
+
         $normalizedFile = ltrim((string) $file, '/');
 
-        return ($this->getCloudfrontUrl() !== '' && $this->getCloudfrontUrl() !== null)
-            ? rtrim($this->getCloudfrontUrl(), '/') . '/' . $normalizedFile
-            : $this->getClient()->getObjectUrl($this->getStorageBucket(), $normalizedFile);
+        try {
+            $url = ($this->getCloudfrontUrl() !== '' && $this->getCloudfrontUrl() !== null)
+                ? rtrim($this->getCloudfrontUrl(), '/') . '/' . $normalizedFile
+                : $this->getClient()->getObjectUrl($this->getStorageBucket(), $normalizedFile);
+
+            if ($app && ($log = $app->make('log'))) {
+                $log->info('Generated URL: ' . $url);
+            }
+
+            return $url;
+        } catch (\Exception $e) {
+            if ($app && ($log = $app->make('log'))) {
+                $log->error('Failed to get public URL: ' . $e->getMessage());
+            }
+            throw $e;
+        }
     }
 
     public function getRelativePathToFile($file): string

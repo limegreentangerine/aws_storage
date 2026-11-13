@@ -14,6 +14,7 @@ use Concrete\Core\File\StorageLocation\Configuration\DeferredConfigurationInterf
 class TypeS3Configuration extends Configuration implements ConfigurationInterface, DeferredConfigurationInterface
 {
     protected string $storageBucket = '';
+    protected string $bucketUsername = '';
     protected string $cloudfrontUrl = '';
     protected string $storageKey = '';
     protected string $storageSecret = '';
@@ -46,6 +47,26 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
     public function setStorageBucket(string $storageBucket): self
     {
         $this->storageBucket = $storageBucket;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of bucketUsername
+     */
+    public function getBucketUsername(): string
+    {
+        return $this->bucketUsername;
+    }
+
+    /**
+     * Set the value of bucketUsername
+     *
+     * @return self
+     */
+    public function setBucketUsername(string $bucketUsername): self
+    {
+        $this->bucketUsername = $bucketUsername;
 
         return $this;
     }
@@ -164,6 +185,7 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
     {
         $data = $req->get('fslType');
         $this->setStorageBucket($data['storageBucket']);
+        $this->setBucketUsername($data['bucketUsername']);
         $this->setCloudfrontUrl($data['cloudfrontUrl']);
         $this->setStorageKey($data['storageKey']);
         $this->setStorageSecret($data['storageSecret']);
@@ -174,6 +196,7 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
     public function loadFromAwsSdk(array $credentials): void
     {
         $this->setStorageBucket($credentials['bucket']);
+        $this->setBucketUsername($credentials['bucketUsername']);
         $this->setCloudfrontUrl($credentials['cloudfront_url'] ?? '');
         $this->setStorageKey($credentials['access_key']);
         $this->setStorageSecret($credentials['secret_key']);
@@ -233,7 +256,9 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
 
     public function getAdapter(): AwsS3Adapter
     {
-        return new AwsS3Adapter($this->getClient(), $this->getStorageBucket());
+        return new AwsS3Adapter($this->getClient(), $this->getStorageBucket(), '', [
+            'visibility' => 'private'
+        ]);
     }
 
     public function getPublicURLToFile($file): string

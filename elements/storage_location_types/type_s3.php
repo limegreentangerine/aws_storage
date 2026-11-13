@@ -14,6 +14,14 @@ $regions = $pkg->getRegions();
 </div>
 
 <div class="form-group">
+    <?php echo $form->label('bucketUsername', t('Bucket Username')); ?>
+    <div class="input-group">
+        <?php echo $form->text('fslType[bucketUsername]', (isset($configuration) && is_object($configuration)) ? $configuration->getBucketUsername() : false, [ 'required' => 'required' ]); ?>
+        <span class="input-group-text"><i class="fas fa-asterisk"></i></span>
+    </div>
+</div>
+
+<div class="form-group">
     <?php echo $form->label('cloudfrontUrl', t('Cloudfront URL <small>(optional)</small>')); ?>
     <?php echo $form->text('fslType[cloudfrontUrl]', (isset($configuration) && is_object($configuration)) ? $configuration->getCloudfrontUrl() : false); ?>
 </div>

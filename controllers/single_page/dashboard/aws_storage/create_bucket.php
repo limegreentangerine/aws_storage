@@ -78,42 +78,47 @@ class CreateBucket extends DashboardPageController
         }
     }
 
+    protected function validateUpdate(string $bucketName, string $bucketUsername): void
+    {
+        $vstrings = app()->make('helper/validation/strings');
+
+        if (!$vstrings->notempty($bucketName)) {
+            $this->error->add(t('Bucket Name required'));
+        }
+
+        if (!$vstrings->notempty($bucketUsername)) {
+            $this->error->add(t('Bucket Username required'));
+        }
+    }
+
     protected function getBasePolicyArray(string $bucketName, string $bucketUsername): array
     {
         return [
             'Version' => '2012-10-17',
             'Statement' => [
                 [
-                    "Sid" => "AllowBucketItemListing",
-                    "Effect" => "Allow",
-                    "Principal" => [
-                        "AWS" => "arn:aws:iam::458437072654:user/s3-storage/{$bucketUsername}"
+                    'Sid' => 'AllowBucketItemListing',
+                    'Effect' => 'Allow',
+                    'Principal' => [
+                        'AWS' => "arn:aws:iam::458437072654:user/s3-storage/{$bucketUsername}",
                     ],
-                    "Action" => "s3:ListBucket",
-                    "Resource" => "arn:aws:s3:::{$bucketName}",
+                    'Action' => 's3:ListBucket',
+                    'Resource' => "arn:aws:s3:::{$bucketName}",
                 ],
                 [
-                    "Sid" => "PublicRead",
-                    "Principal" => "*",
-                    "Effect" => "Allow",
-                    "Action" => [
-                        "s3:GetObject"
+                    'Sid' => 'AllowFileManagement',
+                    'Principal' => [
+                        'AWS' => "arn:aws:iam::458437072654:user/s3-storage/{$bucketUsername}",
                     ],
-                    "Resource" => "arn:aws:s3:::{$bucketName}/*",
+                    'Effect' => 'Allow',
+                    'Action' => [
+                        's3:GetObject',
+                        's3:PutObject',
+                        's3:DeleteObject',
+                    ],
+                    'Resource' => "arn:aws:s3:::{$bucketName}/*",
                 ],
-                [
-                    "Sid" => "AllowFileManagement",
-                    "Principal" => [
-                        "AWS" => "arn:aws:iam::458437072654:user/s3-storage/{$bucketUsername}"
-                    ],
-                    "Effect" => "Allow",
-                    "Action" => [
-                        "s3:PutObject",
-                        "s3:DeleteObject"
-                    ],
-                    "Resource" => "arn:aws:s3:::{$bucketName}/*"
-                ]
-            ]
+            ],
         ];
     }
 
@@ -234,7 +239,7 @@ class CreateBucket extends DashboardPageController
                 'StringEquals' => [
                     'AWS:SourceArn' => $distributionArn,
                 ],
-            ]
+            ],
         ];
 
 
@@ -466,6 +471,7 @@ class CreateBucket extends DashboardPageController
                         }
                     }
 
+                    $credentials['bucketUsername'] = $bucketUsername;
                     $this->addStorageLocation($credentials['bucket'], $credentials);
 
                     $this->flash('success', t('Bucket created for %s', $bucketName));
@@ -473,6 +479,74 @@ class CreateBucket extends DashboardPageController
                 }
                 $this->error->add(t('Empty credentials array'));
 
+            }
+        }
+    }
+
+    public function update_policy()
+    {
+        if (!$this->request->isPost()) {
+            $this->error->add(t('Invalid request method'));
+        }
+
+        if (!$this->token->validate('update_policy_submit')) {
+            $this->error->add($this->token->getErrorMessage());
+        }
+
+        $bucketName = $this->request->get('bucketName');
+        $bucketUsername = $this->request->get('bucketUsername');
+        $useCloudfront = (bool) $this->request->get('useCloudfront');
+        $this->validateUpdate($bucketName, $bucketUsername);
+
+        $distribution = null;
+        if ($useCloudfront) {
+            $distribution = $this->findDistributionByOrigin($bucketName);
+
+            if (!$distribution) {
+                $this->error->add(t('No distribution found for %s', $bucketName));
+            }
+        }
+
+        if (!$this->error->has()) {
+            $policy = $this->getBasePolicyArray($bucketName, $bucketUsername);
+
+            if ($useCloudfront && $distribution) {
+                $distributionArn = $distribution['ARN'];
+                $policy['Statement'][] = [
+                    'Sid' => 'AllowCloudFrontAccess',
+                    'Effect' => 'Allow',
+                    'Principal' => [
+                        'Service' => 'cloudfront.amazonaws.com',
+                    ],
+                    'Action' => 's3:GetObject',
+                    'Resource' => "arn:aws:s3:::{$bucketName}/*",
+                    'Condition' => [
+                        'StringEquals' => [
+                            'AWS:SourceArn' => $distributionArn,
+                        ],
+                    ],
+                ];
+            }
+
+            // echo '<code><pre>';
+            // print_r($policy);
+            // echo '</pre></code>';
+            // die;
+
+            try {
+                $this->s3->putBucketPolicy([
+                    'Bucket' => $bucketName,
+                    'Policy' => json_encode($policy),
+                ]);
+
+                $this->flash('success', t('Policy updated for bucket: %s', $bucketName));
+                return $this->buildRedirect('/dashboard/aws_storage/create_bucket');
+            } catch (AwsException $e) {
+                $this->error->add(t('putBucketPolicy: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            } catch (IamException $e) {
+                $this->error->add(t('putBucketPolicy: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            } catch (S3Exception $e) {
+                $this->error->add(t('putBucketPolicy: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
             }
         }
     }

@@ -9,8 +9,24 @@
  */
 ?>
 
-<?php if ($hideForm) { ?>
+<?php if ($hideForm) {
+    /** @var Concrete\Package\AwsStorage\File\StorageLocation\Configuration\TypeS3Configuration $configuration */
+    $configuration = $defaultStorage->getConfigurationObject();
+    ?>
     <div class="alert alert-info"><?php echo t('An S3 Storage system is already configured: <a href="/dashboard/system/files/storage/edit/%s" target="_blank">%s</a>', $defaultStorage->getID(), $defaultStorage->getName()); ?></div>
+
+    <fieldset>
+        <legend><?php echo t('AWS Permission Issues'); ?></legend>
+        <p><?php echo t('If you\'re having permission issues connecting to, or managing the bucket, click the button below. <span class="fw-bold text-danger">Use with caution</span>'); ?></p>
+
+        <form method="post" action="<?php echo $view->action('update_policy'); ?>">
+            <?php echo $token->output('update_policy_submit') ?>
+            <input type="hidden" name="bucketName" value="<?php echo $configuration->getStorageBucket(); ?>" />
+            <input type="hidden" name="bucketUsername" value="<?php echo $configuration->getBucketUsername(); ?>" />
+            <input type="hidden" name="useCloudfront" value="<?php echo (strlen($configuration->getCloudfrontUrl()) > 0) ? 1 : 0; ?>" />
+            <button type="submit" class="btn btn-danger"><?php echo t('Rebuild Policy'); ?></button>
+        </form>
+    </fieldset>
 <?php } else { ?>
     <form method="post" action="<?php echo $view->action('create'); ?>">
         <?php echo $token->output('submit') ?>

@@ -1,7 +1,7 @@
 <?php defined('C5_EXECUTE') or die('Access Denied');
-    $form = \Core::make('helper/form');
-    $pkg = \Core::make('Concrete\Core\Package\PackageService')->getByHandle('aws_storage');
-    $regions = $pkg->getRegions();
+$form = \Core::make('helper/form');
+$pkg = \Core::make('Concrete\Core\Package\PackageService')->getByHandle('aws_storage');
+$regions = $pkg->getRegions();
 ?>
 
 <div class="form-group">
@@ -9,6 +9,14 @@
 
     <div class="input-group">
         <?php echo $form->text('fslType[storageBucket]', (isset($configuration) && is_object($configuration)) ? $configuration->getStorageBucket() : false, [ 'required' => 'required' ]); ?>
+        <span class="input-group-text"><i class="fas fa-asterisk"></i></span>
+    </div>
+</div>
+
+<div class="form-group">
+    <?php echo $form->label('bucketUsername', t('Bucket Username')); ?>
+    <div class="input-group">
+        <?php echo $form->text('fslType[bucketUsername]', (isset($configuration) && is_object($configuration)) ? $configuration->getBucketUsername() : false, [ 'required' => 'required' ]); ?>
         <span class="input-group-text"><i class="fas fa-asterisk"></i></span>
     </div>
 </div>
@@ -38,7 +46,7 @@
 
 <div class="form-group">
     <?php echo $form->label('region', t('Amazon S3 Region')); ?>
-    <?php echo $form->select('fslType[region]', $regions, (isset($configuration) && is_object($configuration)) ? $configuration->getRegion(): false); ?>
+    <?php echo $form->select('fslType[region]', $regions, (isset($configuration) && is_object($configuration)) ? $configuration->getRegion() : false); ?>
 </div>
 
 <div class="form-group">

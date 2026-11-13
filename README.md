@@ -66,6 +66,17 @@ The **AWS Storage** dashboard page can queue a move from one storage location to
 3. Choose the current location and target location, then select **Create Queue**.
 4. Follow the resulting batch in the Concrete CMS activity dashboard.
 
+## Invalidate CloudFront cache
+
+When using CloudFront to serve public files, you can invalidate cached content from the **AWS Storage** dashboard:
+
+1. Open `/dashboard/aws_storage`.
+2. Select the **Invalidate URLs** tab.
+3. Specify the file paths or URL patterns to invalidate.
+4. Submit the invalidation request.
+
+CloudFront invalidations help ensure that updated files are served to users immediately rather than being served from the cache. Note that CloudFront charges for invalidation requests beyond a certain monthly quota.
+
 ## Development
 
 Run the PHPUnit suite from the package directory:

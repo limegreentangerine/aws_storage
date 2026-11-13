@@ -2,6 +2,12 @@
 
 Notable changes to AWS Storage are documented here.
 
+## [1.1.1]
+
+- Add CloudFront cache invalidation workflow to clear cached content after file operations.
+- Improve IAM policy configuration for better security and reliability.
+- Refactor invalidations helper for improved maintainability.
+
 ## [1.1.0]
 
 - Add AWS API integration to automatically create S3 buckets, IAM users, and policies from the Concrete CMS dashboard.

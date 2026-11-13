@@ -34,7 +34,7 @@ class CreateBucket extends DashboardPageController
 
     protected function getBucketPolicy(string $bucketName, string $userName): ?string
     {
-        $policy = $this->getBasePolicyArray($bucketName);
+        $policy = $this->getBasePolicyArray($bucketName, $userName);
 
         try {
             $result = $this->iam->createPolicy([
@@ -78,28 +78,42 @@ class CreateBucket extends DashboardPageController
         }
     }
 
-    protected function getBasePolicyArray(string $bucketName): array
+    protected function getBasePolicyArray(string $bucketName, string $bucketUsername): array
     {
         return [
             'Version' => '2012-10-17',
             'Statement' => [
                 [
-                    'Effect' => 'Allow',
-                    'Action' => [
-                        's3:ListBucket',
+                    "Sid" => "AllowBucketItemListing",
+                    "Effect" => "Allow",
+                    "Principal" => [
+                        "AWS" => "arn:aws:iam::458437072654:user/s3-storage/{$bucketUsername}"
                     ],
-                    'Resource' => "arn:aws:s3:::{$bucketName}",
+                    "Action" => "s3:ListBucket",
+                    "Resource" => "arn:aws:s3:::{$bucketName}",
                 ],
                 [
-                    'Effect' => 'Allow',
-                    'Action' => [
-                        's3:GetObject',
-                        's3:PutObject',
-                        's3:DeleteObject',
+                    "Sid" => "PublicRead",
+                    "Principal" => "*",
+                    "Effect" => "Allow",
+                    "Action" => [
+                        "s3:GetObject"
                     ],
-                    'Resource' => "arn:aws:s3:::{$bucketName}/*",
+                    "Resource" => "arn:aws:s3:::{$bucketName}/*",
                 ],
-            ],
+                [
+                    "Sid" => "AllowFileManagement",
+                    "Principal" => [
+                        "AWS" => "arn:aws:iam::458437072654:user/s3-storage/{$bucketUsername}"
+                    ],
+                    "Effect" => "Allow",
+                    "Action" => [
+                        "s3:PutObject",
+                        "s3:DeleteObject"
+                    ],
+                    "Resource" => "arn:aws:s3:::{$bucketName}/*"
+                ]
+            ]
         ];
     }
 
@@ -205,27 +219,24 @@ class CreateBucket extends DashboardPageController
         ]);
     }
 
-    protected function updateBucketPolicy(string $bucketName, string $distributionArn): \Aws\Result
+    protected function updateBucketPolicy(string $bucketName, string $bucketUsername, string $distributionArn): \Aws\Result
     {
-        $policy = array_merge($this->getBasePolicyArray($bucketName), [
-            'Version' => '2012-10-17',
-            'Statement' => [
-                [
-                    'Sid' => 'AllowCloudFrontAccess',
-                    'Effect' => 'Allow',
-                    'Principal' => [
-                        'Service' => 'cloudfront.amazonaws.com',
-                    ],
-                    'Action' => 's3:GetObject',
-                    'Resource' => "arn:aws:s3:::{$bucketName}/*",
-                    'Condition' => [
-                        'StringEquals' => [
-                            'AWS:SourceArn' => $distributionArn,
-                        ],
-                    ],
-                ],
+        $policy = $this->getBasePolicyArray($bucketName, $bucketUsername);
+        $policy['Statement'][] = [
+            'Sid' => 'AllowCloudFrontAccess',
+            'Effect' => 'Allow',
+            'Principal' => [
+                'Service' => 'cloudfront.amazonaws.com',
             ],
-        ]);
+            'Action' => 's3:GetObject',
+            'Resource' => "arn:aws:s3:::{$bucketName}/*",
+            'Condition' => [
+                'StringEquals' => [
+                    'AWS:SourceArn' => $distributionArn,
+                ],
+            ]
+        ];
+
 
         return $this->s3->putBucketPolicy([
             'Bucket' => $bucketName,
@@ -448,7 +459,7 @@ class CreateBucket extends DashboardPageController
                             }
 
                             try {
-                                $this->updateBucketPolicy($bucketName, $distributionArn);
+                                $this->updateBucketPolicy($bucketName, $bucketUsername, $distributionArn);
                             } catch (AwsException $e) {
                                 $this->error->add(t('updateBucketPolicy: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
                             }

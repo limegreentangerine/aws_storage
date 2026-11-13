@@ -2,18 +2,21 @@
 
 namespace Concrete\Package\AwsStorage\Controller\SinglePage\Dashboard\AwsStorage;
 
-use Aws\S3\S3Client;
+use Aws\CloudFront\CloudFrontClient;
+use Aws\CloudFront\Exception\CloudFrontException;
+use Aws\Exception\AwsException as ExceptionAwsException;
+use Aws\Iam\Exception\IamException;
 use Aws\Iam\IamClient;
 use Aws\S3\Exception\AwsException;
-use Aws\Iam\Exception\IamException;
-use Aws\CloudFront\CloudFrontClient;
 use Aws\S3\Exception\S3Exception;
-use Concrete\Core\Package\PackageService;
-use Concrete\Core\Error\UserMessageException;
-use Concrete\Core\File\StorageLocation\Type\Type;
-use Concrete\Core\Page\Controller\DashboardPageController;
-use Concrete\Core\File\StorageLocation\StorageLocationFactory;
+use Aws\S3\S3Client;
+use Aws\Sts\StsClient;
 use Concrete\Core\Entity\File\StorageLocation\Type\Type as TypeEntity;
+use Concrete\Core\Error\UserMessageException;
+use Concrete\Core\File\StorageLocation\StorageLocationFactory;
+use Concrete\Core\File\StorageLocation\Type\Type;
+use Concrete\Core\Package\PackageService;
+use Concrete\Core\Page\Controller\DashboardPageController;
 use Concrete\Package\AwsStorage\File\StorageLocation\Configuration\TypeS3Configuration;
 
 class CreateBucket extends DashboardPageController
@@ -27,6 +30,7 @@ class CreateBucket extends DashboardPageController
     protected S3Client $s3;
     protected IamClient $iam;
     protected CloudFrontClient $cloudfront;
+    protected string $accountId;
 
     protected function getBucketPolicy(string $bucketName, string $userName): ?string
     {
@@ -101,6 +105,28 @@ class CreateBucket extends DashboardPageController
         ];
     }
 
+    protected function getCloudfrontAccessControl(string $bucketUsername): string|bool
+    {
+        try {
+            $result = $this->cloudfront->listOriginAccessControls();
+
+            $oacName = $bucketUsername . '-oac';
+            foreach ($result['OriginAccessControlList']['Items'] ?? [] as $item) {
+                if ($item['Name'] === $oacName) {
+                    return $item['Id'];
+                }
+            }
+
+            return false;
+        } catch (\Aws\CloudFront\Exception\CloudFrontException $e) {
+            if ($e->getAwsErrorCode() === 'NoSuchOriginAccessControl') {
+                return false;
+            } else {
+                throw $e;
+            }
+        }
+    }
+
     protected function createCloudfrontAccessControl(string $bucketName, string $bucketUsername): \Aws\Result
     {
         return $this->cloudfront->createOriginAccessControl([
@@ -112,6 +138,24 @@ class CreateBucket extends DashboardPageController
                 'OriginAccessControlOriginType' => 's3',
             ],
         ]);
+    }
+
+    protected function findDistributionByOrigin(string $bucketName): ?array
+    {
+        $originDomain = "{$bucketName}.s3.eu-west-2.amazonaws.com";
+        $paginator = $this->cloudfront->getPaginator('ListDistributions');
+
+        foreach ($paginator as $page) {
+            foreach ($page['DistributionList']['Items'] ?? [] as $distribution) {
+                foreach ($distribution['Origins']['Items'] ?? [] as $origin) {
+                    if ($origin['DomainName'] === $originDomain) {
+                        return $distribution;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     protected function createCloudfrontDistribution(string $bucketName, string $bucketUsername, string $oacId): \Aws\Result
@@ -209,18 +253,19 @@ class CreateBucket extends DashboardPageController
         }
     }
 
-    protected function checkPolicyExists(string $arn): bool
+    protected function checkPolicyExists(string $bucketUsername): string|bool
     {
+        $policyArn = sprintf(
+            'arn:aws:iam::%s:policy/S3Access-%s',
+            $this->accountId,
+            $bucketUsername
+        );
         try {
             $result = $this->iam->getPolicy([
-                'PolicyArn' => $arn
+                'PolicyArn' => $policyArn
             ]);
 
-            var_dump_safe($result);
-            die;
-
-            return true;
-
+            return $result['Policy']['Arn'];
         } catch (IamException $e) {
             if ($e->getAwsErrorCode() === 'NoSuchEntity') {
                 return false;
@@ -249,6 +294,10 @@ class CreateBucket extends DashboardPageController
             ...$config,
             'region' => 'us-east-1',
         ]);
+
+        $sts = new StsClient($config);
+        $identity = $sts->getCallerIdentity();
+        $this->accountId = $identity['Account'];
 
         $pkg = app()->make(PackageService::class)->getByHandle('aws_storage');
         if (!$pkg) {
@@ -321,19 +370,20 @@ class CreateBucket extends DashboardPageController
 
             // create bucket policy
             $bucketPolicy = false;
-            // try {
-            //     $bucketPolicy = $this->checkPolicyExists($bucketUsername);
+            try {
+                $bucketPolicy = $this->checkPolicyExists($bucketUsername);
 
-            //     if ($bucketPolicy === false) {
-            //         $bucketPolicy = $this->getBucketPolicy($bucketName, $bucketUsername);
-            //     }
-            // } catch (AwsException $e) {
-            //     $this->error->add(t('getBucketPolicy: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
-            // } catch (IamException $e) {
-            //     $this->error->add(t('checkPolicyExists: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
-            // }
+                if ($bucketPolicy === false) {
+                    $bucketPolicy = $this->getBucketPolicy($bucketName, $bucketUsername);
+                }
+            } catch (AwsException $e) {
+                $this->error->add(t('getBucketPolicy: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            } catch (IamException $e) {
+                $this->error->add(t('checkPolicyExists: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            }
 
             if ($bucketPolicy !== false) {
+                // if policy exists attach it
                 try {
                     $this->iam->attachUserPolicy([
                         'UserName' => $bucketUsername,
@@ -343,6 +393,7 @@ class CreateBucket extends DashboardPageController
                     $this->error->add(t('attachUserPolicy: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
                 }
 
+                // create user access key
                 $credentials = [];
                 try {
                     $keys = $this->iam->createAccessKey([
@@ -357,19 +408,50 @@ class CreateBucket extends DashboardPageController
                     ];
                 } catch (AwsException $e) {
                     $this->error->add(t('createAccessKey: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+                } catch (IamException $e) {
+                    $this->error->add(t('createAccessKey: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
                 }
 
                 if (!empty($credentials)) {
-                    die('useCloudfront');
                     if ($useCloudfront) {
-                        $oac = $this->createCloudfrontAccessControl($bucketName, $bucketUsername);
-                        $oacId = $oac['OriginAccessControl']['Id'];
+                        $oacId = $this->getCloudfrontAccessControl($bucketUsername);
 
-                        $distribution = $this->createCloudfrontDistribution($bucketName, $bucketUsername, $oacId);
-                        $credentials['cloudfront_url'] = 'https://' . $distribution['Distribution']['DomainName'];
-                        $distributionArn = $distribution['Distribution']['ARN'];
+                        if ($oacId === false) {
+                            try {
+                                $oac = $this->createCloudfrontAccessControl($bucketName, $bucketUsername);
+                                $oacId = $oac['OriginAccessControl']['Id'];
+                            } catch (AwsException $e) {
+                                $this->error->add(t('createCloudfrontAccessControl: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+                            } catch (CloudFrontException $e) {
+                                $this->error->add(t('createCloudfrontAccessControl: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+                            }
+                        }
 
-                        $this->updateBucketPolicy($bucketName, $distributionArn);
+
+                        if (isset($oacId) && $oacId !== false) {
+                            $distribution = $this->findDistributionByOrigin($bucketName);
+
+                            if (!$distribution) {
+                                try {
+                                    $distribution = $this->createCloudfrontDistribution($bucketName, $bucketUsername, $oacId);
+                                    $credentials['cloudfront_url'] = 'https://' . $distribution['Distribution']['DomainName'];
+                                    $distributionArn = $distribution['Distribution']['ARN'];
+                                } catch (AwsException $e) {
+                                    $this->error->add(t('createCloudfrontDistribution: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+                                } catch (CloudFrontException $e) {
+                                    $this->error->add(t('createCloudfrontAccessControl: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+                                }
+                            } else {
+                                $credentials['cloudfront_url'] = 'https://' . $distribution['Distribution']['DomainName'];
+                                $distributionArn = $distribution['Distribution']['ARN'];
+                            }
+
+                            try {
+                                $this->updateBucketPolicy($bucketName, $distributionArn);
+                            } catch (AwsException $e) {
+                                $this->error->add(t('updateBucketPolicy: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+                            }
+                        }
                     }
 
                     $this->addStorageLocation($credentials['bucket'], $credentials);

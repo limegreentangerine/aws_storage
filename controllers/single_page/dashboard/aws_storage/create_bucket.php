@@ -2,21 +2,20 @@
 
 namespace Concrete\Package\AwsStorage\Controller\SinglePage\Dashboard\AwsStorage;
 
-use Aws\CloudFront\CloudFrontClient;
-use Aws\CloudFront\Exception\CloudFrontException;
-use Aws\Exception\AwsException as ExceptionAwsException;
-use Aws\Iam\Exception\IamException;
-use Aws\Iam\IamClient;
-use Aws\S3\Exception\AwsException;
-use Aws\S3\Exception\S3Exception;
 use Aws\S3\S3Client;
+use Aws\Iam\IamClient;
 use Aws\Sts\StsClient;
-use Concrete\Core\Entity\File\StorageLocation\Type\Type as TypeEntity;
-use Concrete\Core\Error\UserMessageException;
-use Concrete\Core\File\StorageLocation\StorageLocationFactory;
-use Concrete\Core\File\StorageLocation\Type\Type;
+use Aws\S3\Exception\S3Exception;
+use Aws\S3\Exception\AwsException;
+use Aws\Iam\Exception\IamException;
+use Aws\CloudFront\CloudFrontClient;
 use Concrete\Core\Package\PackageService;
+use Concrete\Core\Error\UserMessageException;
+use Aws\CloudFront\Exception\CloudFrontException;
+use Concrete\Core\File\StorageLocation\Type\Type;
 use Concrete\Core\Page\Controller\DashboardPageController;
+use Concrete\Core\File\StorageLocation\StorageLocationFactory;
+use Concrete\Core\Entity\File\StorageLocation\Type\Type as TypeEntity;
 use Concrete\Package\AwsStorage\File\StorageLocation\Configuration\TypeS3Configuration;
 
 class CreateBucket extends DashboardPageController
@@ -30,6 +29,7 @@ class CreateBucket extends DashboardPageController
     protected S3Client $s3;
     protected IamClient $iam;
     protected CloudFrontClient $cloudfront;
+    protected StorageLocationFactory $factory;
     protected string $accountId;
 
     protected function getBucketPolicy(string $bucketName, string $userName): ?string
@@ -55,12 +55,10 @@ class CreateBucket extends DashboardPageController
         $configuration = $this->type->getConfigurationObject();
         $configuration->loadFromAwsSdk($credentials);
 
-        $factory = $this->app->make(StorageLocationFactory::class);
-
         /* @var StorageLocationFactory $factory */
-        $location = $factory->create($configuration, t('S3 Storage (%s)', $bucketName));
+        $location = $this->factory->create($configuration, t('S3 Storage (%s)', $bucketName));
         $location->setIsDefault(1);
-        $location = $factory->persist($location);
+        $location = $this->factory->persist($location);
     }
 
     protected function validate(string $bucketName, string $bucketLocation, string $bucketUsername): void
@@ -121,9 +119,9 @@ class CreateBucket extends DashboardPageController
         } catch (\Aws\CloudFront\Exception\CloudFrontException $e) {
             if ($e->getAwsErrorCode() === 'NoSuchOriginAccessControl') {
                 return false;
-            } else {
-                throw $e;
             }
+            throw $e;
+
         }
     }
 
@@ -258,11 +256,11 @@ class CreateBucket extends DashboardPageController
         $policyArn = sprintf(
             'arn:aws:iam::%s:policy/S3Access-%s',
             $this->accountId,
-            $bucketUsername
+            $bucketUsername,
         );
         try {
             $result = $this->iam->getPolicy([
-                'PolicyArn' => $policyArn
+                'PolicyArn' => $policyArn,
             ]);
 
             return $result['Policy']['Arn'];
@@ -310,7 +308,10 @@ class CreateBucket extends DashboardPageController
             throw new UserMessageException(t('S3 storage type not available'));
         }
 
-        // TODO: get current storage locations and check for type_s3, I don't want more than one of these for now
+        $this->factory = $this->app->make(StorageLocationFactory::class);
+        $defaultStorage = $this->factory->fetchDefault();
+        $this->set('hideForm', $defaultStorage->getTypeObject()->fslTypeHandle === 'type_s3');
+        $this->set('defaultStorage', $defaultStorage);
     }
 
     public function create()
@@ -333,7 +334,7 @@ class CreateBucket extends DashboardPageController
             'bucketName' => $bucketName,
             'bucketLocation' => $bucketLocation,
             'bucketUsername' => $bucketUsername,
-            'useCloudfront' => $useCloudfront
+            'useCloudfront' => $useCloudfront,
         ]);
 
         if (!$this->error->has()) {

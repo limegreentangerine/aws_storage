@@ -5,6 +5,7 @@ namespace Concrete\Package\AwsStorage\File\StorageLocation\Configuration;
 use Aws\S3\S3Client;
 use Concrete\Core\Http\Request;
 use AwsStorage\AwsS3AdapterWrapper;
+use AwsStorage\Logger\AwsStorageLogger;
 use League\Flysystem\AwsS3v3\AwsS3Adapter;
 use Concrete\Core\Support\Facade\Application;
 use Concrete\Core\File\StorageLocation\Configuration\Configuration;
@@ -268,7 +269,7 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
             // Log the adapter creation attempt
             $app = Application::getFacadeApplication();
             if ($app) {
-                $log = $app->make('log');
+                $log = $app->make(AwsStorageLogger::class)->getLogger();
                 if ($log) {
                     $log->info('Creating S3 adapter for bucket: ' . $this->getStorageBucket());
                 }
@@ -280,7 +281,7 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
             );
 
             if ($app) {
-                $log = $app->make('log');
+                $log = $app->make(AwsStorageLogger::class)->getLogger();
                 if ($log) {
                     $log->info('S3 adapter created successfully, class: ' . get_class($adapter));
                 }
@@ -290,7 +291,7 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
         } catch (\Exception $e) {
             $app = Application::getFacadeApplication();
             if ($app) {
-                $log = $app->make('log');
+                $log = $app->make(AwsStorageLogger::class)->getLogger();
                 if ($log) {
                     $log->error('Failed to create S3 adapter: ' . $e->getMessage());
                     $log->debug($e->getTraceAsString());
@@ -304,7 +305,7 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
     {
         $app = Application::getFacadeApplication();
         if ($app) {
-            $log = $app->make('log');
+            $log = $app->make(AwsStorageLogger::class)->getLogger();
             if ($log) {
                 $log->info('Getting public URL for file: ' . $file);
             }

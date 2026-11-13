@@ -4,6 +4,7 @@ namespace AwsStorage;
 
 use League\Flysystem\Util;
 use League\Flysystem\Config;
+use AwsStorage\Logger\AwsStorageLogger;
 use League\Flysystem\AwsS3v3\AwsS3Adapter;
 use Concrete\Core\Support\Facade\Application;
 
@@ -17,7 +18,7 @@ class AwsS3AdapterWrapper extends AwsS3Adapter
         try {
             $app = Application::getFacadeApplication();
             if ($app) {
-                $log = $app->make('log');
+                $log = $app->make(AwsStorageLogger::class)->getLogger();
                 if ($log) {
                     $log->{$level}($message);
                 }

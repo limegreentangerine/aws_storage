@@ -2,15 +2,15 @@
 
 namespace Concrete\Package\AwsStorage\Controller\SinglePage\Dashboard\AwsStorage;
 
-use Aws\CloudFront\CloudFrontClient;
-use Aws\CloudFront\Exception\CloudFrontException;
 use Aws\Exception\AwsException;
-use Concrete\Core\Entity\File\StorageLocation\Type\Type as TypeEntity;
-use Concrete\Core\Error\UserMessageException;
-use Concrete\Core\File\StorageLocation\StorageLocationFactory;
-use Concrete\Core\File\StorageLocation\Type\Type;
+use Aws\CloudFront\CloudFrontClient;
 use Concrete\Core\Package\PackageService;
+use Concrete\Core\Error\UserMessageException;
+use Aws\CloudFront\Exception\CloudFrontException;
+use Concrete\Core\File\StorageLocation\Type\Type;
 use Concrete\Core\Page\Controller\DashboardPageController;
+use Concrete\Core\File\StorageLocation\StorageLocationFactory;
+use Concrete\Core\Entity\File\StorageLocation\Type\Type as TypeEntity;
 
 class InvalidateUrls extends DashboardPageController
 {
@@ -21,6 +21,24 @@ class InvalidateUrls extends DashboardPageController
     protected TypeEntity $type;
     protected CloudFrontClient $cloudfront;
     protected StorageLocationFactory $factory;
+
+    protected function findDistributionByOrigin(string $bucketName): ?array
+    {
+        $originDomain = "{$bucketName}.s3.eu-west-2.amazonaws.com";
+        $paginator = $this->cloudfront->getPaginator('ListDistributions');
+
+        foreach ($paginator as $page) {
+            foreach ($page['DistributionList']['Items'] ?? [] as $distribution) {
+                foreach ($distribution['Origins']['Items'] ?? [] as $origin) {
+                    if ($origin['DomainName'] === $originDomain) {
+                        return $distribution;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
 
     public function on_start()
     {
@@ -65,15 +83,15 @@ class InvalidateUrls extends DashboardPageController
         $rawUrls = $this->request->get('urls');
         $urls = array_filter(
             array_map(
-                fn ($url) => trim(str_replace($cloudfrontUrl, '', $url)),
-                preg_split('/\r\n|\r|\n/', $rawUrls)
-            )
+                fn($url) => trim(str_replace($cloudfrontUrl, '', $url)),
+                preg_split('/\r\n|\r|\n/', $rawUrls),
+            ),
         );
 
         $this->set('formContent', [
             'bucketName' => $bucketName,
             'cloudfrontUrl' => $cloudfrontUrl,
-            'urls' => $rawUrls
+            'urls' => $rawUrls,
         ]);
 
         if (empty($urls)) {
@@ -106,23 +124,5 @@ class InvalidateUrls extends DashboardPageController
                 $this->error->add(t('createInvalidation: CloudFrontException - %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
             }
         }
-    }
-
-    protected function findDistributionByOrigin(string $bucketName): ?array
-    {
-        $originDomain = "{$bucketName}.s3.eu-west-2.amazonaws.com";
-        $paginator = $this->cloudfront->getPaginator('ListDistributions');
-
-        foreach ($paginator as $page) {
-            foreach ($page['DistributionList']['Items'] ?? [] as $distribution) {
-                foreach ($distribution['Origins']['Items'] ?? [] as $origin) {
-                    if ($origin['DomainName'] === $originDomain) {
-                        return $distribution;
-                    }
-                }
-            }
-        }
-
-        return null;
     }
 }

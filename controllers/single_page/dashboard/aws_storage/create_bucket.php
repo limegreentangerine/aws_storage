@@ -7,6 +7,7 @@ use Aws\Iam\IamClient;
 use Aws\S3\Exception\AwsException;
 use Aws\Iam\Exception\IamException;
 use Aws\CloudFront\CloudFrontClient;
+use Aws\S3\Exception\S3Exception;
 use Concrete\Core\Package\PackageService;
 use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\File\StorageLocation\Type\Type;
@@ -26,16 +27,6 @@ class CreateBucket extends DashboardPageController
     protected S3Client $s3;
     protected IamClient $iam;
     protected CloudFrontClient $cloudfront;
-
-    protected function createBucket(string $name, string $location): \Aws\Result
-    {
-        return $this->s3->createBucket([
-            'Bucket' => $name,
-            'CreateBucketConfiguration' => [
-                'LocationConstraint' => $location,
-            ],
-        ]);
-    }
 
     protected function getBucketPolicy(string $bucketName, string $userName): ?string
     {
@@ -108,14 +99,6 @@ class CreateBucket extends DashboardPageController
                 ],
             ],
         ];
-    }
-
-    protected function createUser(string $username): \Aws\Result
-    {
-        return $this->iam->createUser([
-            'UserName' => $username,
-            'Path' => '/s3-storage/',
-        ]);
     }
 
     protected function createCloudfrontAccessControl(string $bucketName, string $bucketUsername): \Aws\Result
@@ -226,11 +209,11 @@ class CreateBucket extends DashboardPageController
         }
     }
 
-    protected function checkPolicyExists(string $userName): bool
+    protected function checkPolicyExists(string $arn): bool
     {
         try {
             $result = $this->iam->getPolicy([
-                'PolicyName' => 'S3Access-' . $userName,
+                'PolicyArn' => $arn
             ]);
 
             var_dump_safe($result);
@@ -301,20 +284,33 @@ class CreateBucket extends DashboardPageController
             'bucketName' => $bucketName,
             'bucketLocation' => $bucketLocation,
             'bucketUsername' => $bucketUsername,
+            'useCloudfront' => $useCloudfront
         ]);
 
         if (!$this->error->has()) {
+            // create bucket
             try {
                 if (!$this->s3->doesBucketExistV2($bucketName)) {
-                    $this->createBucket($bucketName, $bucketLocation);
+                    $this->s3->createBucket([
+                        'Bucket' => $bucketName,
+                        'CreateBucketConfiguration' => [
+                            'LocationConstraint' => $bucketLocation,
+                        ],
+                    ]);
                 }
             } catch (AwsException $e) {
                 $this->error->add(t('createBucket: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            } catch (S3Exception $e) {
+                $this->error->add(t('doesBucketExist: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
             }
 
+            // create user
             try {
                 if (!$this->getUser($bucketUsername)) {
-                    $this->createUser($bucketUsername);
+                    return $this->iam->createUser([
+                        'UserName' => $bucketUsername,
+                        'Path' => '/s3-storage/',
+                    ]);
                 }
             } catch (AwsException $e) {
                 $this->error->add(t('createUser: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
@@ -322,18 +318,20 @@ class CreateBucket extends DashboardPageController
                 $this->error->add(t('getUser: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
             }
 
-            $bucketPolicy = false;
-            try {
-                $bucketPolicy = $this->checkPolicyExists($bucketUsername);
 
-                if ($bucketPolicy === false) {
-                    $bucketPolicy = $this->getBucketPolicy($bucketName, $bucketUsername);
-                }
-            } catch (AwsException $e) {
-                $this->error->add(t('getBucketPolicy: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
-            } catch (IamException $e) {
-                $this->error->add(t('checkPolicyExists: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
-            }
+            // create bucket policy
+            $bucketPolicy = false;
+            // try {
+            //     $bucketPolicy = $this->checkPolicyExists($bucketUsername);
+
+            //     if ($bucketPolicy === false) {
+            //         $bucketPolicy = $this->getBucketPolicy($bucketName, $bucketUsername);
+            //     }
+            // } catch (AwsException $e) {
+            //     $this->error->add(t('getBucketPolicy: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            // } catch (IamException $e) {
+            //     $this->error->add(t('checkPolicyExists: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            // }
 
             if ($bucketPolicy !== false) {
                 try {

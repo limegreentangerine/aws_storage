@@ -49,10 +49,10 @@ The **AWS Storage** dashboard provides an automated setup wizard to create AWS r
 1. Open `/dashboard/aws_storage`.
 2. Use the setup wizard to provide your AWS account credentials.
 3. The package will automatically:
-   - Create an S3 bucket with your specified name
-   - Create an IAM user with appropriate permissions
-   - Create and attach necessary IAM policies
-   - Optionally create a CloudFront distribution for CDN delivery
+    - Create an S3 bucket with your specified name
+    - Create an IAM user with appropriate permissions
+    - Create and attach necessary IAM policies
+    - Optionally create a CloudFront distribution for CDN delivery
 4. Review the created resources and configure your storage location with the generated credentials.
 
 All AWS API operations are logged for troubleshooting and audit purposes.

@@ -35,30 +35,30 @@ class CreateBucket extends DashboardPageController
     protected function getBucketPolicy(string $bucketName, string $userName): ?string
     {
         $policy = [
-            "Version" => "2012-10-17",
-            "Statement" => [
+            'Version' => '2012-10-17',
+            'Statement' => [
                 [
-                    "Sid" => "MediaBucketAccess",
-                    "Effect" => "Allow",
-                    "Action" => [
-                        "s3:ListBucket",
-                        "s3:GetBucketLocation"
+                    'Sid' => 'MediaBucketAccess',
+                    'Effect' => 'Allow',
+                    'Action' => [
+                        's3:ListBucket',
+                        's3:GetBucketLocation',
                     ],
-                    "Resource" => "arn:aws:s3:::{$bucketName}"
+                    'Resource' => "arn:aws:s3:::{$bucketName}",
                 ],
                 [
-                    "Sid" => "MediaObjectAccess",
-                    "Effect" => "Allow",
-                    "Action" => [
-                        "s3:GetObject",
-                        "s3:PutObject",
-                        "s3:DeleteObject",
-                        "s3:AbortMultipartUpload",
-                        "s3:ListMultipartUploadParts"
+                    'Sid' => 'MediaObjectAccess',
+                    'Effect' => 'Allow',
+                    'Action' => [
+                        's3:GetObject',
+                        's3:PutObject',
+                        's3:DeleteObject',
+                        's3:AbortMultipartUpload',
+                        's3:ListMultipartUploadParts',
                     ],
-                    "Resource" => "arn:aws:s3:::{$bucketName}/*"
-                ]
-            ]
+                    'Resource' => "arn:aws:s3:::{$bucketName}/*",
+                ],
+            ],
         ];
 
         try {

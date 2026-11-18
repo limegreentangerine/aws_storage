@@ -35,6 +35,20 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
         return $client;
     }
 
+    protected function log(string $level, string $message): void
+    {
+        $app = Application::getFacadeApplication();
+        if ($app) {
+            $logger = $app->make(AwsStorageLogger::class);
+            if ($logger && $logger->isLoggingEnabled()) {
+                $log = $logger->getLogger();
+                if ($log) {
+                    $log->{$level}($message);
+                }
+            }
+        }
+    }
+
     /**
      * Get the value of storageBucket
      */
@@ -266,50 +280,26 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
         try {
             $client = $this->getClient();
 
-            // Log the adapter creation attempt
-            $app = Application::getFacadeApplication();
-            if ($app) {
-                $log = $app->make(AwsStorageLogger::class)->getLogger();
-                if ($log) {
-                    $log->info('Creating S3 adapter for bucket: ' . $this->getStorageBucket());
-                }
-            }
+            $this->log('info', 'Creating S3 adapter for bucket: ' . $this->getStorageBucket());
 
             $adapter = new AwsS3AdapterWrapper(
                 $client,
                 $this->getStorageBucket(),
             );
 
-            if ($app) {
-                $log = $app->make(AwsStorageLogger::class)->getLogger();
-                if ($log) {
-                    $log->info('S3 adapter created successfully, class: ' . get_class($adapter));
-                }
-            }
+            $this->log('info', 'S3 adapter created successfully, class: ' . get_class($adapter));
 
             return $adapter;
         } catch (\Exception $e) {
-            $app = Application::getFacadeApplication();
-            if ($app) {
-                $log = $app->make(AwsStorageLogger::class)->getLogger();
-                if ($log) {
-                    $log->error('Failed to create S3 adapter: ' . $e->getMessage());
-                    $log->debug($e->getTraceAsString());
-                }
-            }
+            $this->log('error', 'Failed to create S3 adapter: ' . $e->getMessage());
+            $this->log('debug', $e->getTraceAsString());
             throw new \RuntimeException('Failed to create S3 adapter: ' . $e->getMessage(), 0, $e);
         }
     }
 
     public function getPublicURLToFile($file): string
     {
-        $app = Application::getFacadeApplication();
-        if ($app) {
-            $log = $app->make(AwsStorageLogger::class)->getLogger();
-            if ($log) {
-                $log->info('Getting public URL for file: ' . $file);
-            }
-        }
+        $this->log('info', 'Getting public URL for file: ' . $file);
 
         $normalizedFile = ltrim((string) $file, '/');
 
@@ -318,15 +308,11 @@ class TypeS3Configuration extends Configuration implements ConfigurationInterfac
                 ? rtrim($this->getCloudfrontUrl(), '/') . '/' . $normalizedFile
                 : $this->getClient()->getObjectUrl($this->getStorageBucket(), $normalizedFile);
 
-            if ($app && ($log = $app->make('log'))) {
-                $log->info('Generated URL: ' . $url);
-            }
+            $this->log('info', 'Generated URL: ' . $url);
 
             return $url;
         } catch (\Exception $e) {
-            if ($app && ($log = $app->make('log'))) {
-                $log->error('Failed to get public URL: ' . $e->getMessage());
-            }
+            $this->log('error', 'Failed to get public URL: ' . $e->getMessage());
             throw $e;
         }
     }

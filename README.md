@@ -77,6 +77,41 @@ When using CloudFront to serve public files, you can invalidate cached content f
 
 CloudFront invalidations help ensure that updated files are served to users immediately rather than being served from the cache. Note that CloudFront charges for invalidation requests beyond a certain monthly quota.
 
+## Logging
+
+AWS Storage operations can be logged for debugging and troubleshooting. Logging is **disabled by default** and must be explicitly enabled via an environment variable.
+
+### Enable logging
+
+Create a `.env` file in your project root (or copy from `.env.example`):
+
+```bash
+cp .env.example .env
+```
+
+Then set the environment variable:
+
+```env
+AWS_STORAGE_LOG=true
+```
+
+When enabled, the package logs:
+
+- File operations (write, read, delete, rename, copy, etc.)
+- S3 adapter creation and configuration
+- URL generation for public files
+- Any errors encountered during these operations
+
+### Disable logging
+
+To disable logging, set the variable to `false` or remove the `.env` file:
+
+```env
+AWS_STORAGE_LOG=false
+```
+
+Logging is disabled by default, and disabling it eliminates any logging performance overhead.
+
 ## Development
 
 Run the PHPUnit suite from the package directory:

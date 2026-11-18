@@ -18,9 +18,12 @@ class AwsS3AdapterWrapper extends AwsS3Adapter
         try {
             $app = Application::getFacadeApplication();
             if ($app) {
-                $log = $app->make(AwsStorageLogger::class)->getLogger();
-                if ($log) {
-                    $log->{$level}($message);
+                $logger = $app->make(AwsStorageLogger::class);
+                if ($logger && $logger->isLoggingEnabled()) {
+                    $log = $logger->getLogger();
+                    if ($log) {
+                        $log->{$level}($message);
+                    }
                 }
             }
         } catch (\Exception $e) {

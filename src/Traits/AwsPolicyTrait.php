@@ -50,7 +50,51 @@ trait AwsPolicyTrait
      */
     protected function getBucketPolicy(string $accountId, string $bucketName, string $bucketUsername, ?string $cloudfrontArn = null)
     {
-        $policy = [
+        if ($cloudfrontArn !== null) {
+            return [
+                'Version' => '2012-10-17',
+                'Statement' => [
+                    [
+                        'Sid' => 'AllowBucketItemListing',
+                        'Effect' => 'Allow',
+                        'Principal' => [
+                            'AWS' => "arn:aws:iam::{$accountId}:user/s3-storage/{$bucketUsername}",
+                        ],
+                        'Action' => 's3:ListBucket',
+                        'Resource' => "arn:aws:s3:::{$bucketName}",
+                    ],
+                    [
+                        'Sid' => 'AllowFileManagement',
+                        'Effect' => 'Allow',
+                        'Principal' => [
+                            'AWS' => "arn:aws:iam::{$accountId}:user/s3-storage/{$bucketUsername}",
+                        ],
+                        'Action' => [
+                            's3:GetObject',
+                            's3:PutObject',
+                            's3:DeleteObject',
+                        ],
+                        'Resource' => "arn:aws:s3:::{$bucketName}/*",
+                    ],
+                    [
+                        'Sid' => 'AllowCloudFrontAccess',
+                        'Effect' => 'Allow',
+                        'Principal' => [
+                            'Service' => 'cloudfront.amazonaws.com',
+                        ],
+                        'Action' => 's3:GetObject',
+                        'Resource' => "arn:aws:s3:::{$bucketName}/*",
+                        'Condition' => [
+                            'StringEquals' => [
+                                'AWS:SourceArn' => "{$cloudfrontArn}",
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+        }
+
+        return [
             'Version' => '2012-10-17',
             'Statement' => [
                 [
@@ -77,25 +121,6 @@ trait AwsPolicyTrait
                 ],
             ],
         ];
-
-        if ($cloudfrontArn !== null) {
-            $policy['Statement'][] = [
-                'Sid' => 'AllowCloudFrontAccess',
-                'Effect' => 'Allow',
-                'Principal' => [
-                    'Service' => 'cloudfront.amazonaws.com',
-                ],
-                'Action' => 's3:GetObject',
-                'Resource' => "arn:aws:s3:::{$bucketName}/*",
-                'Condition' => [
-                    'StringEquals' => [
-                        'AWS:SourceArn' => "{$cloudfrontArn}",
-                    ],
-                ],
-            ];
-        }
-
-        return $policy;
     }
 
     /**

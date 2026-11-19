@@ -134,7 +134,7 @@ class CreateBucket extends DashboardPageController
         }
 
         if ($this->doesUserExist($bucketUsername)) {
-            $this->error->add(t('A user exists with the name %s, if this is intentional you will need to configure the storage location manually.', $bucketName));
+            $this->error->add(t('A user exists with the name %s, if this is intentional you will need to configure the storage location manually.', $bucketUsername));
         }
 
         // simple validation done, now page will throw exceptions as these are bigger issues....

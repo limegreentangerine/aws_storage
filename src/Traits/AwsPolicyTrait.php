@@ -74,8 +74,8 @@ trait AwsPolicyTrait
                         's3:DeleteObject',
                     ],
                     'Resource' => "arn:aws:s3:::{$bucketName}/*",
-                ]
-            ]
+                ],
+            ],
         ];
 
         if ($cloudfrontArn !== null) {

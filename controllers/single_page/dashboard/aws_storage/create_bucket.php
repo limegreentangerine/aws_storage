@@ -116,7 +116,7 @@ class CreateBucket extends DashboardPageController
 
         $th = $this->app->make('helper/text');
 
-        $bucketName = $th->urlify($this->request->get('bucketName'));
+        $bucketName = $this->request->get('bucketName');
         $bucketLocation = $this->request->get('bucketLocation');
         $bucketUsername = $th->urlify($this->request->get('bucketUsername'));
         $useCloudfront = ($this->request->get('useCloudfront')) ? true : false;
@@ -148,7 +148,7 @@ class CreateBucket extends DashboardPageController
                     ],
                 ]);
             } catch (AwsException $e) {
-                throw new UserMessageException(t('createBucket: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+                throw new UserMessageException(t('createBucket: %s', $e->getAwsErrorMessage() ?? $e->getMessage()));
             }
 
             // create user
@@ -158,12 +158,8 @@ class CreateBucket extends DashboardPageController
                     'Path' => '/s3-storage/',
                 ]);
             } catch (AwsException $e) {
-                throw new UserMessageException(t('createUser: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+                throw new UserMessageException(t('createUser: %s', $e->getAwsErrorMessage() ?? $e->getMessage()));
             }
-
-            // create base bucket policy and attach
-            $bucketPolicy = $this->getBucketPolicy($bucketName, $bucketUsername);
-            $this->updateBucketPolicy($bucketName, $bucketPolicy);
 
             // create user policy and attach
             $userPolicyArn = $this->doesUserPolicyExist($bucketUsername);
@@ -200,8 +196,12 @@ class CreateBucket extends DashboardPageController
                 $distributionArn = $distribution['Distribution']['ARN'];
 
                 // update the buckets policy so cloudfront can access it
-                $updatedBucketPolicy = $this->getBucketPolicy($bucketName, $bucketUsername, $distributionArn);
+                $updatedBucketPolicy = $this->getBucketPolicy($this->accountId, $bucketName, $bucketUsername, $distributionArn);
                 $this->updateBucketPolicy($bucketName, $updatedBucketPolicy);
+            } else {
+                // create base bucket policy and attach
+                $bucketPolicy = $this->getBucketPolicy($this->accountId, $bucketName, $bucketUsername);
+                $this->updateBucketPolicy($bucketName, $bucketPolicy);
             }
 
             // create the storage location is c5
@@ -239,7 +239,7 @@ class CreateBucket extends DashboardPageController
         }
 
         if (!$this->error->has()) {
-            $policy = $this->getBucketPolicy($bucketName, $bucketUsername, ($useCloudfront && $distribution) ? $distribution['ARN'] : null);
+            $policy = $this->getBucketPolicy($this->accountId, $bucketName, $bucketUsername, ($useCloudfront && $distribution) ? $distribution['ARN'] : null);
             $this->updateBucketPolicy($bucketName, $policy);
 
             $this->flash('success', t('Policy updated for bucket: %s', $bucketName));

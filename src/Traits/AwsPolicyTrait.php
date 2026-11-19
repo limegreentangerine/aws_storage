@@ -48,7 +48,7 @@ trait AwsPolicyTrait
      * @param  ?string $cloudfrontArn
      * @return array
      */
-    protected function getBucketPolicy(string $bucketName, string $bucketUsername, ?string $cloudfrontArn = null)
+    protected function getBucketPolicy(string $accountId, string $bucketName, string $bucketUsername, ?string $cloudfrontArn = null)
     {
         $policy = [
             'Version' => '2012-10-17',
@@ -57,7 +57,7 @@ trait AwsPolicyTrait
                     'Sid' => 'AllowBucketItemListing',
                     'Effect' => 'Allow',
                     'Principal' => [
-                        'AWS' => "arn:aws:iam::458437072654:user/s3-storage/{$bucketUsername}",
+                        'AWS' => "arn:aws:iam::{$accountId}:user/s3-storage/{$bucketUsername}",
                     ],
                     'Action' => 's3:ListBucket',
                     'Resource' => "arn:aws:s3:::{$bucketName}",
@@ -66,7 +66,7 @@ trait AwsPolicyTrait
                     'Sid' => 'AllowFileManagement',
                     'Effect' => 'Allow',
                     'Principal' => [
-                        'AWS' => "arn:aws:iam::458437072654:user/s3-storage/{$bucketUsername}",
+                        'AWS' => "arn:aws:iam::{$accountId}:user/s3-storage/{$bucketUsername}",
                     ],
                     'Action' => [
                         's3:GetObject',

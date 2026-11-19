@@ -87,7 +87,7 @@ trait AwsStorageTrait
                 return false;
             }
 
-            throw new UserMessageException(t('doesPolicyExist: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            throw new UserMessageException(t('doesPolicyExist: %s', $e->getAwsErrorMessage() ?? $e->getMessage()));
         }
     }
 
@@ -109,7 +109,7 @@ trait AwsStorageTrait
 
             return $result['Policy']['Arn'];
         } catch (AwsException $e) {
-            throw new UserMessageException(t('createUserPolicy: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            throw new UserMessageException(t('createUserPolicy: %s', $e->getAwsErrorMessage() ?? $e->getMessage()));
         }
     }
 
@@ -128,7 +128,7 @@ trait AwsStorageTrait
                 'PolicyArn' => $userPolicyArn,
             ]);
         } catch (AwsException $e) {
-            throw new UserMessageException(t('attachUserPolicy: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            throw new UserMessageException(t('attachUserPolicy: %s', $e->getAwsErrorMessage() ?? $e->getMessage()));
         }
     }
 
@@ -157,7 +157,7 @@ trait AwsStorageTrait
                 return false;
             }
 
-            throw new UserMessageException(t('getCloudfrontAccessControl: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            throw new UserMessageException(t('getCloudfrontAccessControl: %s', $e->getAwsErrorMessage() ?? $e->getMessage()));
         }
     }
 
@@ -174,9 +174,9 @@ trait AwsStorageTrait
             $oac = $this->cloudfront->createOriginAccessControl($policy);
             return $oac['OriginAccessControl']['Id'];
         } catch (AwsException $e) {
-            throw new UserMessageException(t('createCloudfrontAccessControl: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            throw new UserMessageException(t('createCloudfrontAccessControl: %s', $e->getAwsErrorMessage() ?? $e->getMessage()));
         } catch (CloudFrontException $e) {
-            throw new UserMessageException(t('createCloudfrontAccessControl: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            throw new UserMessageException(t('createCloudfrontAccessControl: %s', $e->getAwsErrorMessage() ?? $e->getMessage()));
         }
     }
 
@@ -263,9 +263,9 @@ trait AwsStorageTrait
 
             return $result->toArray();
         } catch (AwsException $e) {
-            throw new UserMessageException(t('createCloudfrontDistribution: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            throw new UserMessageException(t('createCloudfrontDistribution: %s', $e->getAwsErrorMessage() ?? $e->getMessage()));
         } catch (CloudFrontException $e) {
-            throw new UserMessageException(t('createCloudfrontDistribution: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            throw new UserMessageException(t('createCloudfrontDistribution: %s', $e->getAwsErrorMessage() ?? $e->getMessage()));
         }
     }
 
@@ -303,7 +303,7 @@ trait AwsStorageTrait
                 'Policy' => json_encode($updatedPolicy),
             ]);
         } catch (AwsException $e) {
-            throw new UserMessageException(t('updateBucketPolicy: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            throw new UserMessageException(t('updateBucketPolicy: %s', $e->getAwsErrorMessage() ?? $e->getMessage()));
         }
     }
 
@@ -330,9 +330,9 @@ trait AwsStorageTrait
                 'region' => $bucketLocation,
             ];
         } catch (AwsException $e) {
-            throw new UserMessageException(t('createAccessKey: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            throw new UserMessageException(t('createAccessKey: %s', $e->getAwsErrorMessage() ?? $e->getMessage()));
         } catch (IamException $e) {
-            throw new UserMessageException(t('createAccessKey: %s', $e->getAwsErrorMessage() ?? $e->getMessage()), $e->getAwsErrorCode());
+            throw new UserMessageException(t('createAccessKey: %s', $e->getAwsErrorMessage() ?? $e->getMessage()));
         }
     }
 }

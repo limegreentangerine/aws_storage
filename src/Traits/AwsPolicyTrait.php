@@ -44,11 +44,11 @@ trait AwsPolicyTrait
      * Generates Bucket Policy
      *
      * @param  string  $bucketName
-     * @param  string  $bucketUsername
+     * @param  string  $userArn
      * @param  ?string $cloudfrontArn
      * @return array
      */
-    protected function getBucketPolicy(string $accountId, string $bucketName, string $bucketUsername, ?string $cloudfrontArn = null)
+    protected function getBucketPolicy(string $accountId, string $bucketName, string $userArn, ?string $cloudfrontArn = null)
     {
         if ($cloudfrontArn !== null) {
             return [
@@ -58,7 +58,7 @@ trait AwsPolicyTrait
                         'Sid' => 'AllowBucketItemListing',
                         'Effect' => 'Allow',
                         'Principal' => [
-                            'AWS' => "arn:aws:iam::{$accountId}:user/s3-storage/{$bucketUsername}",
+                            'AWS' => "{$userArn}",
                         ],
                         'Action' => 's3:ListBucket',
                         'Resource' => "arn:aws:s3:::{$bucketName}",
@@ -67,7 +67,7 @@ trait AwsPolicyTrait
                         'Sid' => 'AllowFileManagement',
                         'Effect' => 'Allow',
                         'Principal' => [
-                            'AWS' => "arn:aws:iam::{$accountId}:user/s3-storage/{$bucketUsername}",
+                            'AWS' => "{$userArn}",
                         ],
                         'Action' => [
                             's3:GetObject',
@@ -101,7 +101,7 @@ trait AwsPolicyTrait
                     'Sid' => 'AllowBucketItemListing',
                     'Effect' => 'Allow',
                     'Principal' => [
-                        'AWS' => "arn:aws:iam::{$accountId}:user/s3-storage/{$bucketUsername}",
+                        'AWS' => "{$userArn}",
                     ],
                     'Action' => 's3:ListBucket',
                     'Resource' => "arn:aws:s3:::{$bucketName}",
@@ -110,7 +110,7 @@ trait AwsPolicyTrait
                     'Sid' => 'AllowFileManagement',
                     'Effect' => 'Allow',
                     'Principal' => [
-                        'AWS' => "arn:aws:iam::{$accountId}:user/s3-storage/{$bucketUsername}",
+                        'AWS' => "{$userArn}",
                     ],
                     'Action' => [
                         's3:GetObject',

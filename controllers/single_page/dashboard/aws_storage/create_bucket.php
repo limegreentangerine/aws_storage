@@ -153,10 +153,11 @@ class CreateBucket extends DashboardPageController
 
             // create user
             try {
-                $this->iam->createUser([
+                $user = $this->iam->createUser([
                     'UserName' => $bucketUsername,
                     'Path' => '/s3-storage/',
                 ]);
+                $userArn = $user['User']['Arn'];
             } catch (AwsException $e) {
                 throw new UserMessageException(t('createUser: %s', $e->getAwsErrorMessage() ?? $e->getMessage()));
             }
@@ -175,6 +176,8 @@ class CreateBucket extends DashboardPageController
                 $bucketUsername,
                 $bucketLocation,
             );
+
+            sleep(1); // wait just a sec, let aws catch up....
 
             if ($useCloudfront) {
                 // we are using cloudfront
@@ -196,11 +199,11 @@ class CreateBucket extends DashboardPageController
                 $distributionArn = $distribution['Distribution']['ARN'];
 
                 // update the buckets policy so cloudfront can access it
-                $updatedBucketPolicy = $this->getBucketPolicy($this->accountId, $bucketName, $bucketUsername, $distributionArn);
+                $updatedBucketPolicy = $this->getBucketPolicy($this->accountId, $bucketName, $userArn, $distributionArn);
                 $this->updateBucketPolicy($bucketName, $updatedBucketPolicy);
             } else {
                 // create base bucket policy and attach
-                $bucketPolicy = $this->getBucketPolicy($this->accountId, $bucketName, $bucketUsername);
+                $bucketPolicy = $this->getBucketPolicy($this->accountId, $bucketName, $userArn);
                 $this->updateBucketPolicy($bucketName, $bucketPolicy);
             }
 

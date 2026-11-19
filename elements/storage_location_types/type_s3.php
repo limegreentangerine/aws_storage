@@ -39,7 +39,7 @@ $regions = $pkg->getRegions();
     <?php echo $form->label('storageSecret', t('Access Secret')); ?>
 
     <div class="input-group">
-        <?php echo $form->text('fslType[storageSecret]', (isset($configuration) && is_object($configuration)) ? $configuration->getStorageSecret() : false, [ 'required' => 'required' ]); ?>
+        <?php echo $form->password('fslType[storageSecret]', (isset($configuration) && is_object($configuration)) ? $configuration->getStorageSecret() : false, [ 'required' => 'required' ]); ?>
         <span class="input-group-text"><i class="fas fa-asterisk"></i></span>
     </div>
 </div>

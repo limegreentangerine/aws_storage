@@ -297,9 +297,7 @@ trait AwsStorageTrait
      */
     protected function updateBucketPolicy(string $bucketName, array $updatedPolicy): void
     {
-        \Log::addDebug(json_encode($updatedPolicy));
         try {
-
             $this->s3->putBucketPolicy([
                 'Bucket' => $bucketName,
                 'Policy' => json_encode($updatedPolicy),

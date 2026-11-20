@@ -177,8 +177,6 @@ class CreateBucket extends DashboardPageController
                 $bucketLocation,
             );
 
-            sleep(1); // wait just a sec, let aws catch up....
-
             if ($useCloudfront) {
                 // we are using cloudfront
                 // try and get access control, if there isn't one make it
@@ -199,12 +197,8 @@ class CreateBucket extends DashboardPageController
                 $distributionArn = $distribution['Distribution']['ARN'];
 
                 // update the buckets policy so cloudfront can access it
-                $updatedBucketPolicy = $this->getBucketPolicy($this->accountId, $bucketName, $userArn, $distributionArn);
+                $updatedBucketPolicy = $this->getBucketPolicy($bucketName, $distributionArn);
                 $this->updateBucketPolicy($bucketName, $updatedBucketPolicy);
-            } else {
-                // create base bucket policy and attach
-                $bucketPolicy = $this->getBucketPolicy($this->accountId, $bucketName, $userArn);
-                $this->updateBucketPolicy($bucketName, $bucketPolicy);
             }
 
             // create the storage location is c5
@@ -241,8 +235,8 @@ class CreateBucket extends DashboardPageController
             }
         }
 
-        if (!$this->error->has()) {
-            $policy = $this->getBucketPolicy($this->accountId, $bucketName, $bucketUsername, ($useCloudfront && $distribution) ? $distribution['ARN'] : null);
+        if (!$this->error->has() && ($useCloudfront && $distribution)) {
+            $policy = $this->getBucketPolicy($bucketName, $distribution['ARN']);
             $this->updateBucketPolicy($bucketName, $policy);
 
             $this->flash('success', t('Policy updated for bucket: %s', $bucketName));

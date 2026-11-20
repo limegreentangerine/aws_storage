@@ -44,82 +44,30 @@ trait AwsPolicyTrait
      * Generates Bucket Policy
      *
      * @param  string  $bucketName
-     * @param  string  $userArn
-     * @param  ?string $cloudfrontArn
+     * @param  string $cloudfrontArn
      * @return array
      */
-    protected function getBucketPolicy(string $accountId, string $bucketName, string $userArn, ?string $cloudfrontArn = null)
+    protected function getBucketPolicy(string $bucketName, string $cloudfrontArn)
     {
-        if ($cloudfrontArn !== null) {
-            return [
-                'Version' => '2012-10-17',
-                'Statement' => [
-                    [
-                        'Sid' => 'AllowBucketItemListing',
-                        'Effect' => 'Allow',
-                        'Principal' => [
-                            'AWS' => "{$userArn}",
-                        ],
-                        'Action' => 's3:ListBucket',
-                        'Resource' => "arn:aws:s3:::{$bucketName}",
-                    ],
-                    [
-                        'Sid' => 'AllowFileManagement',
-                        'Effect' => 'Allow',
-                        'Principal' => [
-                            'AWS' => "{$userArn}",
-                        ],
-                        'Action' => [
-                            's3:GetObject',
-                            's3:PutObject',
-                            's3:DeleteObject',
-                        ],
-                        'Resource' => "arn:aws:s3:::{$bucketName}/*",
-                    ],
-                    [
-                        'Sid' => 'AllowCloudFrontAccess',
-                        'Effect' => 'Allow',
-                        'Principal' => [
-                            'Service' => 'cloudfront.amazonaws.com',
-                        ],
-                        'Action' => 's3:GetObject',
-                        'Resource' => "arn:aws:s3:::{$bucketName}/*",
-                        'Condition' => [
-                            'StringEquals' => [
-                                'AWS:SourceArn' => "{$cloudfrontArn}",
-                            ],
-                        ],
-                    ],
-                ],
-            ];
-        }
 
         return [
-            'Version' => '2012-10-17',
-            'Statement' => [
+            "Version" => "2012-10-17",
+            "Statement" => [
                 [
-                    'Sid' => 'AllowBucketItemListing',
-                    'Effect' => 'Allow',
-                    'Principal' => [
-                        'AWS' => "{$userArn}",
+                    "Sid" => "AllowCloudFrontAccess",
+                    "Effect" => "Allow",
+                    "Principal" => [
+                        "Service" => "cloudfront.amazonaws.com"
                     ],
-                    'Action' => 's3:ListBucket',
-                    'Resource' => "arn:aws:s3:::{$bucketName}",
-                ],
-                [
-                    'Sid' => 'AllowFileManagement',
-                    'Effect' => 'Allow',
-                    'Principal' => [
-                        'AWS' => "{$userArn}",
-                    ],
-                    'Action' => [
-                        's3:GetObject',
-                        's3:PutObject',
-                        's3:DeleteObject',
-                    ],
-                    'Resource' => "arn:aws:s3:::{$bucketName}/*",
-                ],
-            ],
+                    "Action" => "s3:GetObject",
+                    "Resource" => "arn:aws:s3:::{$bucketName}/*",
+                    "Condition" => [
+                        "StringEquals" => [
+                            "AWS:SourceArn" => "{$cloudfrontArn}"
+                        ]
+                    ]
+                ]
+            ]
         ];
     }
 
